@@ -45,6 +45,7 @@ export const verifyRefresh = async (refreshToken:string)=>{
 
 export const logoutUser = async (refreshToken:string)=>{
     const user = await User.findOne({refreshToken});
+    if(!user)return;
     if(user){
         user.refreshToken=null;
         await user.save();

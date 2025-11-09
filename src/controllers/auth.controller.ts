@@ -53,7 +53,6 @@ export const refreshAccessToken = async (req:Request,res:Response)=>{
 export const logout = async(req:Request,res:Response)=>{
     try{
         const refreshToken = req.cookies.refreshToken;
-        console.log(refreshToken);
         
         if(refreshToken) await logoutUser(refreshToken);
         res.clearCookie("refreshToken",{

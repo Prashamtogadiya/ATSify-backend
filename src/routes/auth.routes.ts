@@ -9,17 +9,17 @@ router.post("/signup", signUp);
 router.post("/login", login);
 router.get("/refresh", refreshAccessToken);
 
-// PROTECTED test route
-router.get("/me", authenticate, (req, res) => {
-  // if `authenticate` passed successfully -> req.userId exist
-  return res.json({
-    success: true,
-    message: "Authenticated route works",
-    userId: req.userId,
-  });
-});
-
 // LOGOUT
 router.post("/logout", logout);
+
+// PROTECTED test route
+// router.get("/me", authenticate, (req, res) => {
+//   return res.json({
+//     success: true,
+//     message: "Authenticated route works",
+//     userId: req.userId,
+//   });
+// });
+
 
 export default router;
