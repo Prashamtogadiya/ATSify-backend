@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { signUp, login, refreshAccessToken, logout } from "../controllers/auth.controller";
 import { authenticate } from "../middleware/auth.middleware";
-
+import { validate } from "../middleware/authValidate";
+import { signUpSchema, loginSchema } from "../validations/auth.validation";
 const router = Router();
 
 // PUBLIC routes
-router.post("/signup", signUp);
-router.post("/login", login);
+router.post("/signup", validate(signUpSchema), signUp);
+router.post("/login", validate(loginSchema), login);
 router.get("/refresh", refreshAccessToken);
 
 // LOGOUT

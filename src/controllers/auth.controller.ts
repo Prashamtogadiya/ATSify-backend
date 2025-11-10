@@ -1,6 +1,18 @@
 import { Request, Response } from "express";
 import { generateAccessToken, generateTokens, registerUser, validateUser, verifyRefresh, logoutUser } from "../services/auth.service";
 
+/**
+ * POST /signup
+ *
+ * Create a new user, persist it, and return the created user (without sensitive fields).
+ *
+ * Request body:
+ *  - { name: string, email: string, password: string }
+ *
+ * Responses:
+ *  - 201: { success: true, message: "User created", user: { ... } }
+ *  - 400: { success: false, message: string } (validation / duplicate email / DB errors)
+ */
 export const signUp = async(req:Request,res:Response)=>{
     try{
         const {name, email, password} = req.body;
@@ -14,6 +26,18 @@ export const signUp = async(req:Request,res:Response)=>{
     }
 };
 
+/**
+ * POST /login
+ *
+ * Validate credentials, create access + refresh tokens, set refresh token cookie, and return access token.
+ *
+ * Request body:
+ *  - { email: string, password: string }
+ *
+ * Responses:
+ *  - 200: { success: true, accessToken: string } and sets httpOnly refreshToken cookie
+ *  - 400: { success: false, message: string } (invalid credentials / other errors)
+ */
 export const login = async (req:Request,res:Response)=>{
     try{
         const {email, password} = req.body;
@@ -34,6 +58,19 @@ export const login = async (req:Request,res:Response)=>{
     }
 };
 
+/**
+ * POST /refresh
+ *
+ * Read refresh token from cookie, verify it and return a new access token.
+ *
+ * Requires:
+ *  - Cookie: { refreshToken: string }
+ *
+ * Responses:
+ *  - 200: { success: true, accessToken: string }
+ *  - 401: { success: false, message: "No refresh token" }
+ *  - 403: { success: false, message: "Invalid refresh token" }
+ */
 export const refreshAccessToken = async (req:Request,res:Response)=>{
     try{
         const refreshToken = req.cookies.refreshToken;
@@ -50,6 +87,19 @@ export const refreshAccessToken = async (req:Request,res:Response)=>{
     }
 }
 
+/**
+ * POST /logout
+ *
+ * Revoke the refresh token stored in the DB for the current cookie (if present),
+ * clear the refreshToken cookie and return success.
+ *
+ * Cookie:
+ *  - refreshToken (optional)
+ *
+ * Responses:
+ *  - 200: { success: true, message: "Logout Successful" }
+ *  - 500: { success: false, message: "Internal server error" }
+ */
 export const logout = async(req:Request,res:Response)=>{
     try{
         const refreshToken = req.cookies.refreshToken;

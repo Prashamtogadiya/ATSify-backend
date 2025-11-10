@@ -4,6 +4,28 @@ import { decode } from "punycode";
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET!;
 
+/**
+ * Express middleware that protects routes by validating a Bearer access token.
+ *
+ * Behavior:
+ *  - Reads the Authorization header and expects the value "Bearer <token>".
+ *  - Verifies the token using process.env.JWT_ACCESS_SECRET.
+ *  - On success: attaches the token's `id` claim to req.userId and calls next().
+ *  - On failure or missing header: responds with 401 and a JSON error body.
+ *
+ * Requirements:
+ *  - Environment: JWT_ACCESS_SECRET must be set to the JWT signing secret for access tokens.
+ *
+ * Request:
+ *  - Header: Authorization: "Bearer <accessToken>"
+ *
+ * Response on error:
+ *  - 401 Unauthorized with JSON: { success: false, message: string }
+ *
+ * Note:
+ *  - This middleware mutates req by adding `userId`. If you want TypeScript support for req.userId,
+ *    extend the Express Request interface in a global.d.ts or similar declaration file.
+ */
 export const authenticate = (req:Request,res:Response,next:NextFunction)=>{
     const header = req.headers.authorization;
 
