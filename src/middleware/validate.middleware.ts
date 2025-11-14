@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { ZodTypeAny } from "zod";
-
+import { z, ZodObject } from "zod";
 /**
  * Middleware factory to validate request payloads with a Zod schema.
  *
@@ -22,14 +22,25 @@ import { ZodTypeAny } from "zod";
  * @returns Express middleware (req, res, next)
  */
 export const validate =
-  (schema: ZodTypeAny) =>
-  (req:Request, res:Response, next:NextFunction) => {
-    const result = schema.safeParse(req.body);
+  (schema: ZodObject<any>) =>
+  (req: Request, res: Response, next: NextFunction) => {
+
+    const result = schema.safeParse({
+      body: req.body,
+      params: req.params,
+      query: req.query,
+    });
+
     if (!result.success) {
       return res.status(400).json({
         success: false,
         message: result.error.issues[0].message,
       });
     }
+
+    // 🟢 schema.infer gives correct type
+    const parsed = result.data as z.infer<typeof schema>;
+
+    req.body = parsed.body;
     next();
   };

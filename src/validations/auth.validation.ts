@@ -14,9 +14,11 @@ import { z } from "zod";
  *  // throws with readable errors — use `safeParse`/`safeParseAsync` in middleware to avoid throwing.
  */
 export const signUpSchema = z.object({
-  name: z.string().min(2, "Name must be atleast 2 chars"),
-  email: z.string().email("Invalid email").trim().toLowerCase(),
-  password: z.string().trim().min(6, "Password minimum 6 characters"),
+  body: z.object({
+    name: z.string().min(2, "Name must be atleast 2 chars"),
+    email: z.string().email("Invalid email").trim().toLowerCase(),
+    password: z.string().trim().min(6, "Password minimum 6 characters"),
+  }),
 });
 
 /**
@@ -29,6 +31,8 @@ export const signUpSchema = z.object({
  *  { email: string, password: string }
  */
 export const loginSchema = z.object({
-  email: z.string().email("Invalid email").trim().toLowerCase(),
-  password: z.string().trim().min(6, "Password minimum 6 characters"),
+  body: z.object({
+    email: z.string().email("Invalid email").trim().toLowerCase(),
+    password: z.string().trim().min(6, "Password minimum 6 characters"),
+  }),
 });
