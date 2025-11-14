@@ -13,8 +13,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@ai-sdk/groq": "^2.0.29",
     "@google/genai": "^1.29.1",
     "@google/generative-ai": "^0.24.1",
+    "ai": "^5.0.93",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "mongoose": "^8.19.3",

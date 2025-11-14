@@ -4,7 +4,7 @@ import Resume from "../models/Resume.model";
 import JobRequest from "../models/JobRequest";
 import { extractTextFromPdf } from "../utils/extractText";
 import { extractTextFromImages } from "../utils/ocr";
-import { analyzeResumeWithGemini } from "./analysisAI";
+import { analyzeResumeWithGroq } from "./analysisAI";
 
 export const analyzeResumeService = async (
   userId: string,
@@ -26,7 +26,7 @@ export const analyzeResumeService = async (
   }
 
   // Gemini AI analysis
-  const analysisResult = await analyzeResumeWithGemini(
+  const analysisResult = await analyzeResumeWithGroq(
     resumeText,
     job.jobDescription
   );
