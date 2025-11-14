@@ -13,11 +13,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google/genai": "^1.29.1",
+    "@google/generative-ai": "^0.24.1",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "mongoose": "^8.19.3",
     "multer": "^2.0.2",
+    "pdf-parse-fork": "^1.2.0",
     "pdf-poppler": "^0.2.3",
+    "tesseract.js": "^6.0.1",
     "zod": "^4.1.12"
   },
   "devDependencies": {
@@ -25,6 +29,7 @@
     "@types/mongoose": "^5.11.97",
     "@types/multer": "^2.0.0",
     "@types/node": "^24.10.0",
+    "@types/tesseract.js": "^2.0.0",
     "nodemon": "^3.1.10",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
