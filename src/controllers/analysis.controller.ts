@@ -1,4 +1,3 @@
-// controllers/analysis.controller.ts
 import { Request, Response, NextFunction } from "express";
 import { analyzeResumeService } from "../services/analysis.service";
 

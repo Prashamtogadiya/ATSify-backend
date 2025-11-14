@@ -1,4 +1,3 @@
-// services/analysis.service.ts
 import Analysis from "../models/Analysis";
 import Resume from "../models/Resume.model";
 import JobRequest from "../models/JobRequest";
@@ -16,7 +15,6 @@ export const analyzeResumeService = async (
 
   if (!resume || !job) throw new Error("Resume or Job not found");
 
-  // Extract resume text
   let resumeText = "";
 
   if (resume.imagesPaths?.length > 0) {
@@ -25,13 +23,11 @@ export const analyzeResumeService = async (
     resumeText = await extractTextFromPdf(resume.originalPdfPath);
   }
 
-  // Gemini AI analysis
   const analysisResult = await analyzeResumeWithGroq(
     resumeText,
     job.jobDescription
   );
 
-  // Save in DB
   const saved = await Analysis.create({
     userId,
     resumeId,

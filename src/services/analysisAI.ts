@@ -1,7 +1,5 @@
-// services/analysisAI.ts
-// import { geminiModel } from "../utils/gemini";
-import { groq } from '@ai-sdk/groq';
-import { generateText } from 'ai';
+import { groq } from "@ai-sdk/groq";
+import { generateText } from "ai";
 function sanitizeJSON(str: string) {
   return str
     .replace(/```json/g, "")
@@ -53,8 +51,10 @@ JOB DESCRIPTION:
 ${jobDescription}
 `;
 
-  const result = await generateText({   model: groq('llama-3.3-70b-versatile'),
-prompt: prompt });
+  const result = await generateText({
+    model: groq("llama-3.3-70b-versatile"),
+    prompt: prompt,
+  });
   const text = result.text;
 
   const clean = sanitizeJSON(text);

@@ -1,4 +1,3 @@
-// models/Analysis.ts
 import { Schema, model, Document, Types } from "mongoose";
 
 interface Tip {
