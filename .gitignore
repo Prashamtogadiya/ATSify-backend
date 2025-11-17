@@ -5,3 +5,8 @@ dist
 .vscode
 npm-debug.log
 .DS_Store
+
+
+logs/
+*.log
+logs/**/*.log

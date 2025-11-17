@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
 import Resume from "../models/Resume.model";
 import { processResumeUpload } from "../services/resume.service";
+import logger from "../utils/logger";
 
 export const uploadResume = async (req: Request, res: Response) => {
   try {
     if (!req.userId) return res.status(401).json({ message: "Unauthorized" });
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-
+    logger.info(`User ${req.userId} is uploading a resume: ${req.file.originalname}`);
     const resume = await processResumeUpload(req.userId, req.file.path);
 
     res.status(201).json({

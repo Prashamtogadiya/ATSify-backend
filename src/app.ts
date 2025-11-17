@@ -4,11 +4,14 @@ import resumeRouter from './routes/resume.routes';
 import jobRequestRoutes from './routes/jobRequest.routes';
 import analysisRouter from './routes/analysis.routes';
 import cookieParser from 'cookie-parser';
+import httpLogger from "./middleware/httpLogger";
 import { errorHandler } from "./middleware/errorHandler";
 import path from 'path';
 
 const app = express();
 app.use(express.json());
+
+app.use(httpLogger);
 
 app.use(cookieParser());
 

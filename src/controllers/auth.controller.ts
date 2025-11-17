@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { generateAccessToken, generateTokens, registerUser, validateUser, verifyRefresh, logoutUser } from "../services/auth.service";
-
+import logger from "../utils/logger";
 /**
  * POST /signup
  *
@@ -15,6 +15,7 @@ import { generateAccessToken, generateTokens, registerUser, validateUser, verify
  */
 export const signUp = async(req:Request,res:Response)=>{
     try{
+        logger.info(`Attempting to sign up user with email: ${req.body.email}`);
         const {name, email, password} = req.body;
         const user = await registerUser(name,email,password);
 
@@ -40,6 +41,7 @@ export const signUp = async(req:Request,res:Response)=>{
  */
 export const login = async (req:Request,res:Response)=>{
     try{
+        logger.info(`User attempting to log in with email: ${req.body.email}`);
         const {email, password} = req.body;
         const user = await validateUser(email,password);
         const userId = user._id as string;
@@ -73,6 +75,7 @@ export const login = async (req:Request,res:Response)=>{
  */
 export const refreshAccessToken = async (req:Request,res:Response)=>{
     try{
+        logger.info(`Refreshing access token using refresh token from cookies`);
         const refreshToken = req.cookies.refreshToken;
         console.log(refreshToken);
 

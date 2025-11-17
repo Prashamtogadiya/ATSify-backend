@@ -20,18 +20,23 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "mongoose": "^8.19.3",
+    "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "pdf-parse-fork": "^1.2.0",
     "pdf-poppler": "^0.2.3",
     "tesseract.js": "^6.0.1",
+    "winston": "^3.18.3",
+    "winston-daily-rotate-file": "^5.0.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/express": "^5.0.5",
     "@types/mongoose": "^5.11.97",
+    "@types/morgan": "^1.9.10",
     "@types/multer": "^2.0.0",
     "@types/node": "^24.10.0",
     "@types/tesseract.js": "^2.0.0",
+    "@types/winston": "^2.4.4",
     "nodemon": "^3.1.10",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
