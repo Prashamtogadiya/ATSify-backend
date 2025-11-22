@@ -5,15 +5,28 @@ import jobRequestRoutes from './routes/jobRequest.routes';
 import analysisRouter from './routes/analysis.routes';
 import cookieParser from 'cookie-parser';
 import httpLogger from "./middleware/httpLogger";
+import cors from "cors";
+
 import { errorHandler } from "./middleware/errorHandler";
 import path from 'path';
 
 const app = express();
+app.use(cors({
+  origin: "http://localhost:5173", // your frontend
+  credentials: true,              // allow cookies, auth headers
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+
 app.use(express.json());
 
 app.use(httpLogger);
 
 app.use(cookieParser());
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Credentials", "true");
+  next();
+});
 
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 

@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { ZodTypeAny } from "zod";
 import { z, ZodObject } from "zod";
+import logger from "../utils/logger";
+
 /**
  * Middleware factory to validate request payloads with a Zod schema.
  *
@@ -24,7 +26,7 @@ import { z, ZodObject } from "zod";
 export const validate =
   (schema: ZodObject<any>) =>
   (req: Request, res: Response, next: NextFunction) => {
-
+    logger.info(`Validating request with schema: ${schema}`);
     const result = schema.safeParse({
       body: req.body,
       params: req.params,
@@ -38,7 +40,7 @@ export const validate =
       });
     }
 
-    // 🟢 schema.infer gives correct type
+    // schema.infer gives correct type
     const parsed = result.data as z.infer<typeof schema>;
 
     req.body = parsed.body;

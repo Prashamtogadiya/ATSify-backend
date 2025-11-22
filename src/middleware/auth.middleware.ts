@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { decode } from "punycode";
+import logger from "../utils/logger";
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET!;
 
@@ -27,6 +28,7 @@ const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET!;
  *    extend the Express Request interface in a global.d.ts or similar declaration file.
  */
 export const authenticate = (req:Request,res:Response,next:NextFunction)=>{
+    logger.info(`Authenticating request with Authorization header: ${req.headers.authorization}`);
     const header = req.headers.authorization;
 
     if(!header|| !header.startsWith("Bearer")){
@@ -35,10 +37,12 @@ export const authenticate = (req:Request,res:Response,next:NextFunction)=>{
 
     const token = header.split(" ")[1];
     try{
+        
         const decoded = jwt.verify(token,ACCESS_SECRET)as {id:string};
         req.userId = decoded.id;
         next();
-    }catch{
+    }catch(err:any){
+        logger.error(`Authentication failed: ${err.message}`);
         return res.status(401).json({success:false,message:"Invalid or expired token"});
     }
 }
