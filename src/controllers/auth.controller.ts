@@ -80,9 +80,12 @@ export const refreshAccessToken = async (req:Request,res:Response)=>{
     try{
         logger.info(`Refreshing access token using refresh token from cookies`);
         const refreshToken = req.cookies.refreshToken;
-        console.log(refreshToken);
+        // console.log(refreshToken);
 
-        if(!refreshToken) return res.status(401).json({success:false,message:"No refresh token"});
+        if(!refreshToken){
+            logger.error(`No refresh token provided in cookies`);
+            return res.status(401).json({success:false,message:"No refresh token"});
+        }
 
         const user = await verifyRefresh(refreshToken);
         const userId = user._id as string;
