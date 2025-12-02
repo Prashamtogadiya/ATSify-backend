@@ -1,6 +1,7 @@
 import User from "../models/User.model";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import logger from "../utils/logger";
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET!;
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
@@ -24,7 +25,12 @@ export const registerUser = async (
   password: string
 ) => {
   const exists = await User.findOne({ email });
-  if (exists) throw new Error("User already exists");
+  if (exists) {
+    logger.error(
+      `Registration failed: User with email ${email} already exists`
+    );
+    throw new Error("User already exists");
+  }
 
   const hash = await bcrypt.hash(
     password,
@@ -43,10 +49,16 @@ export const registerUser = async (
  */
 export const validateUser = async (email: string, password: string) => {
   const user = await User.findOne({ email });
-  if (!user) throw new Error("User not found");
+  if (!user) {
+    logger.error(`Validation failed: User with email ${email} not found`);
+    throw new Error("User not found");
+  }
 
   const valid = await bcrypt.compare(password, user.password);
-  if (!valid) throw new Error("Invalid credentials");
+  if (!valid) {
+    logger.error(`Validation failed: Invalid credentials for email ${email}`);
+    throw new Error("Invalid credentials");
+  }
 
   return user;
 };

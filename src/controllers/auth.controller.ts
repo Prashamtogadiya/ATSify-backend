@@ -18,7 +18,6 @@ export const signUp = async(req:Request,res:Response)=>{
         logger.info(`Attempting to sign up user with email: ${req.body.email}`);
         const {name, email, password} = req.body;
         const user = await registerUser(name,email,password);
-
         const {password:_pw,refreshToken:_rt,...userData} = user.toObject();
         logger.info(`User signed up successfully with email: ${req.body.email}`);
         return res.status(201).json({success:true,message:"User created",user:userData});
@@ -80,7 +79,6 @@ export const refreshAccessToken = async (req:Request,res:Response)=>{
     try{
         logger.info(`Refreshing access token using refresh token from cookies`);
         const refreshToken = req.cookies.refreshToken;
-        // console.log(refreshToken);
 
         if(!refreshToken){
             logger.error(`No refresh token provided in cookies`);
@@ -88,6 +86,11 @@ export const refreshAccessToken = async (req:Request,res:Response)=>{
         }
 
         const user = await verifyRefresh(refreshToken);
+        if(!user){
+            logger.error(`Refresh token verification failed`);
+            return res.status(403).json({success:false,message:"Invalid refresh token"});
+        }
+        logger.info(`Refresh token verified for user ID: ${user._id}`);
         const userId = user._id as string;
         const accessToken = generateAccessToken(userId.toString());
         logger.info(`Access token refreshed successfully for user ID: ${userId}`);
