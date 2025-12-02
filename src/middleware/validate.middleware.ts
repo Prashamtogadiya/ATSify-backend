@@ -26,7 +26,7 @@ import logger from "../utils/logger";
 export const validate =
   (schema: ZodObject<any>) =>
   (req: Request, res: Response, next: NextFunction) => {
-    logger.info(`Validating request with schema: ${schema}`);
+    logger.info(`Validating request with schema: ${JSON.stringify(schema.shape)}`);
     const result = schema.safeParse({
       body: req.body,
       params: req.params,
