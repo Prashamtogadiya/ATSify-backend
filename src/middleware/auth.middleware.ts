@@ -40,6 +40,7 @@ export const authenticate = (req:Request,res:Response,next:NextFunction)=>{
         
         const decoded = jwt.verify(token,ACCESS_SECRET)as {id:string};
         req.userId = decoded.id;
+        logger.info(`Authenticated user ID successfully: ${req.userId}`);
         next();
     }catch(err:any){
         logger.error(`Authentication failed: ${err.message}`);
