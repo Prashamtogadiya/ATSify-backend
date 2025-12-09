@@ -77,7 +77,7 @@ export const login = async (req:Request,res:Response)=>{
  */
 export const refreshAccessToken = async (req:Request,res:Response)=>{
     try{
-        logger.info(`Refreshing access token using refresh token from cookies`);
+        logger.info(`Refreshing access token using refresh token from cookies ${req.cookies.refreshToken}`);
         const refreshToken = req.cookies.refreshToken;
 
         if(!refreshToken){
