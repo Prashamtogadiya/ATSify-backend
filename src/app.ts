@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import httpLogger from "./middleware/httpLogger";
 import cors from "cors";
 
+import { notFoundHandler } from "./middleware/notFound.middleware";
 import { errorHandler } from "./middleware/errorHandler";
 import path from 'path';
 
@@ -35,6 +36,8 @@ app.use('/api/v1/resume', resumeRouter);
 app.use("/api/v1/job-requests", jobRequestRoutes);
 app.use("/api/v1/analysis", analysisRouter);
 
+// 404 handler — should be AFTER all routes
+app.use(notFoundHandler);
 
 app.use(errorHandler); // always last
 
