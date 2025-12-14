@@ -116,46 +116,89 @@ Content-Type: application/json
 ### Success Response (200 OK)
 ```json
 {
-  "success": true,
-  "message": "AI Resume Analysis Complete",
-  "data": {
-    "_id": "507f1f77bcf86cd799439016",
-    "userId": "507f1f77bcf86cd799439012",
-    "resumeId": "507f1f77bcf86cd799439011",
-    "jobRequestId": "507f1f77bcf86cd799439014",
-    "matchScore": 78,
-    "strengths": [
-      "Strong technical foundation in Node.js and React with 5+ years of experience",
-      "Demonstrated leadership experience managing development teams",
-      "Proven track record with microservices architecture implementation",
-      "Solid cloud deployment experience using AWS services",
-      "Excellent problem-solving skills evidenced by project outcomes"
-    ],
-    "weaknesses": [
-      "Limited recent experience with container orchestration (Kubernetes)",
-      "No specific mention of CI/CD pipeline implementation",
-      "Machine learning background not highlighted in the resume",
-      "GraphQL experience mentioned but not extensively detailed"
-    ],
-    "suggestions": [
-      "Add certifications in Kubernetes (CKA/CKAD) to strengthen DevOps profile",
-      "Include specific CI/CD tools experience (Jenkins, GitHub Actions, etc.)",
-      "Highlight any ML/AI projects or coursework completed",
-      "Expand GraphQL section with real-world implementation examples",
-      "Consider adding metrics to quantify team leadership impact"
-    ],
-    "missingSkills": [
-      "Kubernetes",
-      "Docker Swarm",
-      "Terraform",
-      "Machine Learning",
-      "GraphQL (advanced)",
-      "Apache Kafka",
-      "Redis Caching"
-    ],
-    "createdAt": "2024-01-15T10:30:00.000Z",
-    "updatedAt": "2024-01-15T10:30:00.000Z"
-  }
+    "success": true,
+    "message": "AI Resume Analysis Complete",
+    "data": {
+        "userId": "69170983146b7c0aaf8ea364",
+        "resumeId": "69172b279009960bf9458f75",
+        "jobRequestId": "69172bb42009960bf9458f77",
+        "extractedText": "59 PRogde2ZEGmallcom 7 4918347133041) Gujarat nda Inkaedin\nETI TECHNICAL SKILLS\n* Languages: Java, JavaScript C, HTML, CSS\npling sore delop Seok) pyaar &. irre: MER Sack (MongeDB, Express.\nmy technical kills in a professional Reacts, Nodejs), Flutter\nSora ep sn « Database ergo sa serve\ndevelopment, and continuous learning.\nTE PROJECTS  Github\nEDUCATION\n+ To-Do List Application (JavaScript): A simple task management\nBachelor of Technology (B.Tech) in 10010 help users organize daily tasks.\nCoaiptte: Saisace 8 knglnesehg, + URL Shortener (MERN): A web application that shortens long URLS for\nDarshan University easier sharing,\n+ Quiz Web Application (MERN): A CRUD application allowing users\n2025. Present (Currently in 2ndyean) © rca wat ao sei dim estons ?\nCurrent CPI: 8.83 Matrimony App (Flutter): An application where users can add, edi,\nsearch,and favourite profiles.\n12TH - Passed with 60% . E-Commerce Website (Ongoing): Developing a ull featured e-\nDholakiya School commerce platform with functonslties such as product listing,\nshopping cart, and user authentication\n10TH - Passed with 7%\nDholakiya School ES Se 2\nBT —— PROFESSIONAL SKILLS\nACHIEVEMENT\n« Ranked in the top 19% on MW Sinlinl\nLeetCode contests with over © [ele Hotener\n235+ problems solved in Data © Apia Dr\nStructwres and Algorithms | goo oon\n(DSA). (Prasham1603) + Problem Solver\n+ Teaching Assistant for Data i i\nStructures in Semester 4.\n2 CANES Semester 4 HOBBIES\nLANGUAGES « Travelling\n+ Coding\ngE + Listening to music\n+ Hindi . Playing outdoor games\n+ Gujarat",
+        "overallScore": 73,
+        "ATS": {
+            "score": 68,
+            "tips": [
+                {
+                    "type": "improve",
+                    "tip": "Keyword optimization",
+                    "explanation": "Resume text lacks direct mentions of MERN, TS, AI, and LLM, which are crucial keywords from the job description."
+                },
+                {
+                    "type": "good",
+                    "tip": "Technical skills section",
+                    "explanation": "The resume has a dedicated section for technical skills, making it easier for ATS to parse."
+                },
+                {
+                    "type": "improve",
+                    "tip": "Quantify experience",
+                    "explanation": "Resume text does not quantify relevant experience in years or specific projects related to MERN, TS, AI, and LLM."
+                }
+            ]
+        },
+        "toneAndStyle": {
+            "score": 60,
+            "tips": [
+                {
+                    "type": "improve",
+                    "tip": "Use a professional tone",
+                    "explanation": "Some sections, like hobbies and languages, could be presented in a more formal manner."
+                }
+            ]
+        },
+        "content": {
+            "score": 80,
+            "tips": [
+                {
+                    "type": "good",
+                    "tip": "Project inclusion",
+                    "explanation": "The resume includes relevant projects that demonstrate technical skills."
+                },
+                {
+                    "type": "improve",
+                    "tip": "Add more detail to projects",
+                    "explanation": "While projects are listed, adding more details about each project, such as technologies used and accomplishments, could strengthen the resume."
+                }
+            ]
+        },
+        "structure": {
+            "score": 70,
+            "tips": [
+                {
+                    "type": "improve",
+                    "tip": "Reorganize sections for clarity",
+                    "explanation": "Some sections, like education and skills, seem a bit disorganized and could be rearranged for better readability."
+                }
+            ]
+        },
+        "skills": {
+            "score": 85,
+            "tips": [
+                {
+                    "type": "good",
+                    "tip": "Technical skills listed",
+                    "explanation": "The resume lists relevant technical skills, such as Java, JavaScript, and React."
+                },
+                {
+                    "type": "improve",
+                    "tip": "Update with specialized skills",
+                    "explanation": "Adding more specialized skills, especially those directly mentioned in the job description like AI and LLM, could increase the match score."
+                }
+            ]
+        },
+        "_id": "693eec2d874fdbc4d760225e",
+        "createdAt": "2025-12-14T16:56:13.627Z",
+        "updatedAt": "2025-12-14T16:56:13.627Z",
+        "__v": 0
+    }
 }
 ```
 
