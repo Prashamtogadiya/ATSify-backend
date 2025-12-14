@@ -122,7 +122,7 @@ Content-Type: application/json
         "userId": "69170983146b7c0aaf8ea364",
         "resumeId": "69172b279009960bf9458f75",
         "jobRequestId": "69172bb42009960bf9458f77",
-        "extractedText": "59 PRogde2ZEGmallcom 7 4918347133041) Gujarat nda Inkaedin\nETI TECHNICAL SKILLS\n* Languages: Java, JavaScript C, HTML, CSS\npling sore delop Seok) pyaar &. irre: MER Sack (MongeDB, Express.\nmy technical kills in a professional Reacts, Nodejs), Flutter\nSora ep sn « Database ergo sa serve\ndevelopment, and continuous learning.\nTE PROJECTS  Github\nEDUCATION\n+ To-Do List Application (JavaScript): A simple task management\nBachelor of Technology (B.Tech) in 10010 help users organize daily tasks.\nCoaiptte: Saisace 8 knglnesehg, + URL Shortener (MERN): A web application that shortens long URLS for\nDarshan University easier sharing,\n+ Quiz Web Application (MERN): A CRUD application allowing users\n2025. Present (Currently in 2ndyean) © rca wat ao sei dim estons ?\nCurrent CPI: 8.83 Matrimony App (Flutter): An application where users can add, edi,\nsearch,and favourite profiles.\n12TH - Passed with 60% . E-Commerce Website (Ongoing): Developing a ull featured e-\nDholakiya School commerce platform with functonslties such as product listing,\nshopping cart, and user authentication\n10TH - Passed with 7%\nDholakiya School ES Se 2\nBT —— PROFESSIONAL SKILLS\nACHIEVEMENT\n« Ranked in the top 19% on MW Sinlinl\nLeetCode contests with over © [ele Hotener\n235+ problems solved in Data © Apia Dr\nStructwres and Algorithms | goo oon\n(DSA). (Prasham1603) + Problem Solver\n+ Teaching Assistant for Data i i\nStructures in Semester 4.\n2 CANES Semester 4 HOBBIES\nLANGUAGES « Travelling\n+ Coding\ngE + Listening to music\n+ Hindi . Playing outdoor games\n+ Gujarat",
+        "extractedText": "Extracted text from resume",
         "overallScore": 73,
         "ATS": {
             "score": 68,
@@ -204,17 +204,21 @@ Content-Type: application/json
 
 ### Response Field Descriptions
 
+### Response Field Descriptions
+
 | Field | Type | Description |
 |-------|------|-------------|
 | `_id` | string | Unique identifier for the analysis record |
 | `userId` | string | ID of the user who requested the analysis |
 | `resumeId` | string | ID of the analyzed resume |
 | `jobRequestId` | string | ID of the job request used for comparison |
-| `matchScore` | number | Overall compatibility score (0-100) |
-| `strengths` | string[] | List of candidate's strong points relative to job |
-| `weaknesses` | string[] | Areas where candidate falls short |
-| `suggestions` | string[] | Actionable recommendations for improvement |
-| `missingSkills` | string[] | Key skills required but not found in resume |
+| `extractedText` | string | Extracted resume text used for analysis |
+| `overallScore` | number | Overall compatibility score (0-100) |
+| `ATS` | object | ATS-specific score, tips and explanations |
+| `toneAndStyle` | object | Tone and style score with tips |
+| `content` | object | Content quality score with tips |
+| `structure` | object | Structure/formatting score with tips |
+| `skills` | object | Skills match score with recommendations |
 | `createdAt` | string | ISO 8601 timestamp of analysis creation |
 | `updatedAt` | string | ISO 8601 timestamp of last update |
 
