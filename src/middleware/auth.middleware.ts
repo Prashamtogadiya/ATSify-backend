@@ -27,23 +27,32 @@ const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET!;
  *  - This middleware mutates req by adding `userId`. If you want TypeScript support for req.userId,
  *    extend the Express Request interface in a global.d.ts or similar declaration file.
  */
-export const authenticate = (req:Request,res:Response,next:NextFunction)=>{
-    logger.info(`Authenticating request with Authorization header: ${req.headers.authorization}`);
-    const header = req.headers.authorization;
+export const authenticate = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  logger.info(
+    `Authenticating request with Authorization header: ${req.headers.authorization}`
+  );
+  const header = req.headers.authorization;
 
-    if(!header|| !header.startsWith("Bearer")){
-        return res.status(401).json({success:false,message:"Unauthorized token missing"});
-    }
+  if (!header || !header.startsWith("Bearer")) {
+    return res
+      .status(401)
+      .json({ success: false, message: "Unauthorized token missing" });
+  }
 
-    const token = header.split(" ")[1];
-    try{
-        
-        const decoded = jwt.verify(token,ACCESS_SECRET)as {id:string};
-        req.userId = decoded.id;
-        logger.info(`Authenticated user ID successfully: ${req.userId}`);
-        next();
-    }catch(err:any){
-        logger.error(`Authentication failed: ${err.message}`);
-        return res.status(401).json({success:false,message:"Invalid or expired token"});
-    }
-}
+  const token = header.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, ACCESS_SECRET) as { id: string };
+    req.userId = decoded.id;
+    logger.info(`Authenticated user ID successfully: ${req.userId}`);
+    next();
+  } catch (err: any) {
+    logger.error(`Authentication failed: ${err.message}`);
+    return res
+      .status(401)
+      .json({ success: false, message: "Invalid or expired token" });
+  }
+};
