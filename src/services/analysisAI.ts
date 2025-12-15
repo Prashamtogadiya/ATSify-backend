@@ -1,5 +1,13 @@
+// Resume analysis using Groq LLM
+// - Compares resume text against a job description
+// - Evaluates ATS relevance, skills, structure, and overall fit
+// - Forces a strict JSON-only response from the model
+// - Sanitizes model output before parsing
+
 import { groq } from "@ai-sdk/groq";
 import { generateText } from "ai";
+
+// Cleans markdown/codeblock wrappers from model output
 function sanitizeJSON(str: string) {
   return str
     .replace(/```json/g, "")
@@ -50,13 +58,14 @@ ${resumeText}
 JOB DESCRIPTION:
 ${jobDescription}
 `;
-
+  // Generate analysis using Groq LLM
   const result = await generateText({
     model: groq("llama-3.3-70b-versatile"),
     prompt: prompt,
   });
   const text = result.text;
 
+  // Sanitize and parse model output
   const clean = sanitizeJSON(text);
 
   return JSON.parse(clean);

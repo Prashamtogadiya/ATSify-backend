@@ -1,3 +1,8 @@
+// Data access helpers for JobRequest
+// - Create a new job request
+// - Fetch all job requests for a user (latest first)
+// - Fetch a specific job request scoped to a user
+
 import JobRequest from "../models/JobRequest";
 
 export const createJobRequest = async(data:any)=>{

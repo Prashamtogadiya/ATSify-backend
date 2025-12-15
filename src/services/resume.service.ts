@@ -1,3 +1,9 @@
+// Processes an uploaded resume PDF
+// - Converts PDF pages to images using pdf-poppler
+// - Stores images in a timestamped directory
+// - Saves resume metadata in the database (original PDF path, image paths, userId)
+// - Cleans up files on error
+
 import Resume from "../models/Resume.model";
 import path from "path";
 import fs from "fs";
@@ -13,16 +19,19 @@ export const processResumeUpload = async (userId: string, filePath: string) => {
     format: "jpeg",
     out_dir: outputDir,
     out_prefix: path.basename(filePath, path.extname(filePath)),
-    page: null,
+    page: null, // Convert all pages
   };
 
   try {
+    // Convert PDF to images
     await pdfPoppler.convert(filePath, opts);
 
-    const imagesPaths = fs.readdirSync(outputDir).map((file) =>
-      path.join("uploads/images", timestamp, file)
-    );
+    // Get relative paths to saved images
+    const imagesPaths = fs
+      .readdirSync(outputDir)
+      .map((file) => path.join("uploads/images", timestamp, file));
 
+    // Save resume document in DB
     const resumeDoc = await Resume.create({
       userId,
       originalPdfPath: path.join("uploads/pdfs", path.basename(filePath)),
@@ -32,8 +41,10 @@ export const processResumeUpload = async (userId: string, filePath: string) => {
 
     return resumeDoc;
   } catch (error) {
+    // Clean up files if something goes wrong
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    if (fs.existsSync(outputDir)) fs.rmSync(outputDir, { recursive: true, force: true });
+    if (fs.existsSync(outputDir))
+      fs.rmSync(outputDir, { recursive: true, force: true });
     console.error("Error processing PDF:", error);
     throw new Error("Failed to process resume file");
   }
