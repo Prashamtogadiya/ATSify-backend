@@ -6,12 +6,18 @@ import analysisRouter from './routes/analysis.routes';
 import cookieParser from 'cookie-parser';
 import httpLogger from "./middleware/httpLogger";
 import cors from "cors";
-
+// import compression from "compression";
 import { notFoundHandler } from "./middleware/notFound.middleware";
 import { errorHandler } from "./middleware/errorHandler";
 import path from 'path';
 
+
+
+
 const app = express();
+
+// check for below package installation if any issue arises
+// app.use(compression());
 
 // CORS configuration
 app.use(cors({
