@@ -1,5 +1,12 @@
 import { Request, Response } from "express";
-import { generateAccessToken, generateTokens, registerUser, validateUser, verifyRefresh, logoutUser } from "../services/auth.service";
+import {
+  generateAccessToken,
+  generateTokens,
+  registerUser,
+  validateUser,
+  verifyRefresh,
+  logoutUser,
+} from "../services/auth.service";
 import logger from "../utils/logger";
 /**
  * POST /signup
@@ -13,19 +20,37 @@ import logger from "../utils/logger";
  *  - 201: { success: true, message: "User created", user: { ... } }
  *  - 400: { success: false, message: string } (validation / duplicate email / DB errors)
  */
-export const signUp = async(req:Request,res:Response)=>{
-    try{
-        logger.info(`Attempting to sign up user with email: ${req.body.email}`);
-        const {name, email, password} = req.body;
-        const user = await registerUser(name,email,password);
-        const {password:_pw,refreshToken:_rt,...userData} = user.toObject();
-        logger.info(`User signed up successfully with email: ${req.body.email}`);
-        return res.status(201).json({success:true,message:"User created",user:userData});
-
-    }catch(err:any){
-        logger.error(`Sign up failed for email: ${req.body.email} - ${err.message}`);
-        return res.status(400).json({success:false,message:err.message});
-    }
+export const signUp = async (req: Request, res: Response) => {
+  try {
+    logger.info(`Attempting to sign up user with email: ${req.body.email}`);
+    const { name, email, password } = req.body;
+    const user = await registerUser(name, email, password);
+    const { password: _pw, refreshToken: _rt, ...userData } = user.toObject();
+    const userId = user._id as string;
+    const { accessToken, refreshToken } = await generateTokens(
+      userId.toString()
+    );
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+    });
+    logger.info(`User signed up successfully with email: ${req.body.email}`);
+    return res
+      .status(201)
+      .json({
+        success: true,
+        message: "User created",
+        user: userData,
+        accessToken: accessToken,
+      });
+  } catch (err: any) {
+    logger.error(
+      `Sign up failed for email: ${req.body.email} - ${err.message}`
+    );
+    return res.status(400).json({ success: false, message: err.message });
+  }
 };
 
 /**
@@ -40,26 +65,28 @@ export const signUp = async(req:Request,res:Response)=>{
  *  - 200: { success: true, accessToken: string } and sets httpOnly refreshToken cookie
  *  - 400: { success: false, message: string } (invalid credentials / other errors)
  */
-export const login = async (req:Request,res:Response)=>{
-    try{
-        logger.info(`User attempting to log in with email: ${req.body.email}`);
-        const {email, password} = req.body;
-        const user = await validateUser(email,password);
-        const userId = user._id as string;
-        const {accessToken,refreshToken} = await generateTokens(userId.toString());
+export const login = async (req: Request, res: Response) => {
+  try {
+    logger.info(`User attempting to log in with email: ${req.body.email}`);
+    const { email, password } = req.body;
+    const user = await validateUser(email, password);
+    const userId = user._id as string;
+    const { accessToken, refreshToken } = await generateTokens(
+      userId.toString()
+    );
 
-        res.cookie("refreshToken",refreshToken,{
-            httpOnly:true,
-            secure:process.env.NODE_ENV==="production",
-            sameSite:"strict",
-            path:"/"
-        });
-        logger.info(`User logged in successfully with email: ${req.body.email}`);
-        return res.json({success:true,accessToken});
-    }catch(err:any){
-        logger.error(`Login failed for email: ${req.body.email} - ${err.message}`);
-        return res.status(400).json({success:false,message:err.message});
-    }
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+    });
+    logger.info(`User logged in successfully with email: ${req.body.email}`);
+    return res.json({ success: true, accessToken });
+  } catch (err: any) {
+    logger.error(`Login failed for email: ${req.body.email} - ${err.message}`);
+    return res.status(400).json({ success: false, message: err.message });
+  }
 };
 
 /**
@@ -75,31 +102,39 @@ export const login = async (req:Request,res:Response)=>{
  *  - 401: { success: false, message: "No refresh token" }
  *  - 403: { success: false, message: "Invalid refresh token" }
  */
-export const refreshAccessToken = async (req:Request,res:Response)=>{
-    try{
-        logger.info(`Refreshing access token using refresh token from cookies ${req.cookies.refreshToken}`);
-        const refreshToken = req.cookies.refreshToken;
+export const refreshAccessToken = async (req: Request, res: Response) => {
+  try {
+    logger.info(
+      `Refreshing access token using refresh token from cookies ${req.cookies.refreshToken}`
+    );
+    const refreshToken = req.cookies.refreshToken;
 
-        if(!refreshToken){
-            logger.error(`No refresh token provided in cookies`);
-            return res.status(401).json({success:false,message:"No refresh token"});
-        }
-
-        const user = await verifyRefresh(refreshToken);
-        if(!user){
-            logger.error(`Refresh token verification failed`);
-            return res.status(403).json({success:false,message:"Invalid refresh token"});
-        }
-        logger.info(`Refresh token verified for user ID: ${user._id}`);
-        const userId = user._id as string;
-        const accessToken = generateAccessToken(userId.toString());
-        logger.info(`Access token refreshed successfully for user ID: ${userId}`);
-        return res.json({success:true,accessToken});
-    }catch(err:any){
-        logger.error(`Access token refresh failed - ${err.message}`);
-        return res.status(403).json({success:false,message:"Invalid refersh token"});
+    if (!refreshToken) {
+      logger.error(`No refresh token provided in cookies`);
+      return res
+        .status(401)
+        .json({ success: false, message: "No refresh token" });
     }
-}
+
+    const user = await verifyRefresh(refreshToken);
+    if (!user) {
+      logger.error(`Refresh token verification failed`);
+      return res
+        .status(403)
+        .json({ success: false, message: "Invalid refresh token" });
+    }
+    logger.info(`Refresh token verified for user ID: ${user._id}`);
+    const userId = user._id as string;
+    const accessToken = generateAccessToken(userId.toString());
+    logger.info(`Access token refreshed successfully for user ID: ${userId}`);
+    return res.json({ success: true, accessToken });
+  } catch (err: any) {
+    logger.error(`Access token refresh failed - ${err.message}`);
+    return res
+      .status(403)
+      .json({ success: false, message: "Invalid refersh token" });
+  }
+};
 
 /**
  * POST /logout
@@ -114,22 +149,22 @@ export const refreshAccessToken = async (req:Request,res:Response)=>{
  *  - 200: { success: true, message: "Logout Successful" }
  *  - 500: { success: false, message: "Internal server error" }
  */
-export const logout = async(req:Request,res:Response)=>{
-    try{
-        logger.info(`User attempting to log out`);
-        const refreshToken = req.cookies.refreshToken;
-        
-        if(refreshToken) await logoutUser(refreshToken);
-        res.clearCookie("refreshToken",{
-            httpOnly:true,
-            secure:process.env.NODE_ENV==="production",
-            sameSite:"strict",
-            path:"/"
-        });
-        logger.info(`User logged out successfully`);
-        return res.json({success:true,message:"Logout Successful"});
-    }catch(err : any){
-        logger.error(`Logout failed - ${err.message}`);
-        return res.json({success:false,message:"Internal server error"});
-    }
-}
+export const logout = async (req: Request, res: Response) => {
+  try {
+    logger.info(`User attempting to log out`);
+    const refreshToken = req.cookies.refreshToken;
+
+    if (refreshToken) await logoutUser(refreshToken);
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+    });
+    logger.info(`User logged out successfully`);
+    return res.json({ success: true, message: "Logout Successful" });
+  } catch (err: any) {
+    logger.error(`Logout failed - ${err.message}`);
+    return res.json({ success: false, message: "Internal server error" });
+  }
+};
