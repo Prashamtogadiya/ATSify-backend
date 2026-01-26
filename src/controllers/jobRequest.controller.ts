@@ -15,7 +15,7 @@ export const createJobRequest = async (
 
     const jobRequest = await jobService.createJobRequest({
       userId: req.userId!,
-      ...req.body,
+      ...safeBody,
     });
 
     logger.info(`Job request created successfully for user ID: ${req.userId}`);
@@ -36,12 +36,32 @@ export const getMyJobRequests = async (
   next: NextFunction
 ) => {
   try {
-    logger.info(`Fetching job requests for user ID: ${req.userId}`);
-    const jobRequests = await jobService.getUserJobRequests(req.userId!);
-    logger.info(`Fetched ${jobRequests.length} job requests for user ID: ${req.userId}`);
-    return res
-      .status(200)
-      .json(new ApiResponse(200, jobRequests, "Fetched User Job Requests"));
+    const { cursor, limit } = req.query;
+    const parsedLimit = limit ? parseInt(limit as string, 10) : 10;
+
+    // Validate limit
+    const safeLimit = Math.min(Math.max(parsedLimit, 1), 100); // Between 1 and 100
+
+    logger.info(`Fetching job requests for user ID: ${req.userId} with cursor: ${cursor}, limit: ${safeLimit}`);
+
+    const result = await jobService.getUserJobRequests({
+      userId: req.userId!,
+      cursor: cursor as string | undefined,
+      limit: safeLimit,
+    });
+
+    logger.info(`Fetched ${result.data.length} job requests for user ID: ${req.userId}`);
+
+    return res.status(200).json(
+      new ApiResponse(200, {
+        jobRequests: result.data,
+        pagination: {
+          nextCursor: result.nextCursor,
+          hasMore: result.hasMore,
+          limit: safeLimit,
+        },
+      }, "Fetched User Job Requests")
+    );
   } catch (error) {
     logger.error(`Failed to fetch job requests for user ID: ${req.userId} - ${error}`);
     next(error);
