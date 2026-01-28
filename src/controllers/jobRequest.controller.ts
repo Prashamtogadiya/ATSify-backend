@@ -6,10 +6,12 @@ import logger from "../utils/logger";
 export const createJobRequest = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
-    logger.info(`Creating job request for user ID: ${req.userId} with data: ${JSON.stringify(req.body)}`);
+    logger.info(
+      `Creating job request for user ID: ${req.userId} with data: ${JSON.stringify(req.body)}`,
+    );
     // remove userId if passed in request body
     const { userId, ...safeBody } = req.body;
 
@@ -22,10 +24,12 @@ export const createJobRequest = async (
     return res
       .status(201)
       .json(
-        new ApiResponse(201, jobRequest, "Job Request created successfully")
+        new ApiResponse(201, jobRequest, "Job Request created successfully"),
       );
   } catch (error) {
-    logger.error(`Failed to create job request for user ID: ${req.userId} - ${error}`);
+    logger.error(
+      `Failed to create job request for user ID: ${req.userId} - ${error}`,
+    );
     next(error);
   }
 };
@@ -33,7 +37,7 @@ export const createJobRequest = async (
 export const getMyJobRequests = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { cursor, limit } = req.query;
@@ -42,7 +46,9 @@ export const getMyJobRequests = async (
     // Validate limit
     const safeLimit = Math.min(Math.max(parsedLimit, 1), 100); // Between 1 and 100
 
-    logger.info(`Fetching job requests for user ID: ${req.userId} with cursor: ${cursor}, limit: ${safeLimit}`);
+    logger.info(
+      `Fetching job requests for user ID: ${req.userId} with cursor: ${cursor}, limit: ${safeLimit}`,
+    );
 
     const result = await jobService.getUserJobRequests({
       userId: req.userId!,
@@ -50,20 +56,51 @@ export const getMyJobRequests = async (
       limit: safeLimit,
     });
 
-    logger.info(`Fetched ${result.data.length} job requests for user ID: ${req.userId}`);
+    logger.info(
+      `Fetched ${result.data.length} job requests for user ID: ${req.userId}`,
+    );
 
     return res.status(200).json(
-      new ApiResponse(200, {
-        jobRequests: result.data,
-        pagination: {
-          nextCursor: result.nextCursor,
-          hasMore: result.hasMore,
-          limit: safeLimit,
+      new ApiResponse(
+        200,
+        {
+          jobRequests: result.data,
+          pagination: {
+            nextCursor: result.nextCursor,
+            hasMore: result.hasMore,
+            limit: safeLimit,
+          },
         },
-      }, "Fetched User Job Requests")
+        "Fetched User Job Requests",
+      ),
     );
   } catch (error) {
-    logger.error(`Failed to fetch job requests for user ID: ${req.userId} - ${error}`);
+    logger.error(
+      `Failed to fetch job requests for user ID: ${req.userId} - ${error}`,
+    );
     next(error);
+  }
+};
+
+export const getJobRequestById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try{
+    const { id } = req.params;
+  logger.info(`Fetching job request ID: ${id} for user ID: ${req.userId}`);
+  const jobRequest = await jobService.getJobRequestById(id, req.userId!);
+  if (!jobRequest) {
+    return res.status(404).json({ message: "Job request not found" });
+  }
+  return res
+    .status(200)
+    .json(new ApiResponse(200, jobRequest, "Fetched Job Request"));
+  }catch(err){
+    logger.error(
+      `Failed to fetch job request ID: ${req.params.id} for user ID: ${req.userId} - ${err}`,
+    );
+    next(err);
   }
 };
