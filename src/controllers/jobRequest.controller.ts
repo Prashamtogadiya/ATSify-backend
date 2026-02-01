@@ -87,17 +87,17 @@ export const getJobRequestById = async (
   res: Response,
   next: NextFunction,
 ) => {
-  try{
+  try {
     const { id } = req.params;
-  logger.info(`Fetching job request ID: ${id} for user ID: ${req.userId}`);
-  const jobRequest = await jobService.getJobRequestById(id, req.userId!);
-  if (!jobRequest) {
-    return res.status(404).json({ message: "Job request not found" });
-  }
-  return res
-    .status(200)
-    .json(new ApiResponse(200, jobRequest, "Fetched Job Request"));
-  }catch(err){
+    logger.info(`Fetching job request ID: ${id} for user ID: ${req.userId}`);
+    const jobRequest = await jobService.getJobRequestById(id, req.userId!);
+    if (!jobRequest) {
+      return res.status(404).json({ message: "Job request not found" });
+    }
+    return res
+      .status(200)
+      .json(new ApiResponse(200, jobRequest, "Fetched Job Request"));
+  } catch (err) {
     logger.error(
       `Failed to fetch job request ID: ${req.params.id} for user ID: ${req.userId} - ${err}`,
     );
