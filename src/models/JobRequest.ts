@@ -19,4 +19,7 @@ const jobRequestSchema = new Schema<IJobRequest>(
     {timestamps:true}
 )
 
+jobRequestSchema.index({ userId: 1, _id: -1 });
+
+
 export default model<IJobRequest>("JobRequest",jobRequestSchema);
