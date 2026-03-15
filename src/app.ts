@@ -1,4 +1,5 @@
 import express from "express";
+import adminRouter from "./routes/admin.routes";
 import authRouter from "./routes/auth.routes";
 import resumeRouter from "./routes/resume.routes";
 import jobRequestRoutes from "./routes/jobRequest.routes";
@@ -46,6 +47,9 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // auth routes
 app.use("/api/v1/auth", authRouter);
+
+// admin routes
+app.use("/api/v1/admin", adminRouter);
 
 // resume routes
 app.use("/api/v1/resume", resumeRouter);

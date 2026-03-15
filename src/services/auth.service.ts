@@ -1,10 +1,15 @@
-import User from "../models/User.model";
+import User, { type UserRole } from "../models/User.model";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import logger from "../utils/logger";
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET!;
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
+
+export type AccessTokenPayload = {
+  id: string;
+  role: UserRole;
+};
 
 /**
  * Registers a new user
@@ -69,8 +74,8 @@ export const validateUser = async (email: string, password: string) => {
  * @param userId - MongoDB user id as string.
  * @returns JWT access token (expires in 15 minutes).
  */
-export const generateAccessToken = (userId: string) => {
-  return jwt.sign({ id: userId }, ACCESS_SECRET, { expiresIn: "15m" });
+export const generateAccessToken = (userId: string, role: UserRole) => {
+  return jwt.sign({ id: userId, role }, ACCESS_SECRET, { expiresIn: "15m" });
 };
 
 /**
@@ -79,8 +84,8 @@ export const generateAccessToken = (userId: string) => {
  * @param userId - MongoDB user id as string.
  * @returns An object with accessToken and refreshToken.
  */
-export const generateTokens = async (userId: string) => {
-  const accessToken = generateAccessToken(userId);
+export const generateTokens = async (userId: string, role: UserRole) => {
+  const accessToken = generateAccessToken(userId, role);
   const refreshToken = jwt.sign({ id: userId }, REFRESH_SECRET, {
     expiresIn: "7d",
   });

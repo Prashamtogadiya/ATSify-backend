@@ -28,7 +28,8 @@ export const signUp = async (req: Request, res: Response) => {
     const { password: _pw, refreshToken: _rt, ...userData } = user.toObject();
     const userId = user._id as string;
     const { accessToken, refreshToken } = await generateTokens(
-      userId.toString()
+      userId.toString(),
+      user.role
     );
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -72,7 +73,8 @@ export const login = async (req: Request, res: Response) => {
     const user = await validateUser(email, password);
     const userId = user._id as string;
     const { accessToken, refreshToken } = await generateTokens(
-      userId.toString()
+      userId.toString(),
+      user.role
     );
 
     res.cookie("refreshToken", refreshToken, {
@@ -125,7 +127,7 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
     }
     logger.info(`Refresh token verified for user ID: ${user._id}`);
     const userId = user._id as string;
-    const accessToken = generateAccessToken(userId.toString());
+    const accessToken = generateAccessToken(userId.toString(), user.role);
     logger.info(`Access token refreshed successfully for user ID: ${userId}`);
     return res.json({ success: true, accessToken });
   } catch (err: any) {

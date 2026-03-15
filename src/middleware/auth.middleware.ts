@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { decode } from "punycode";
+import type { UserRole } from "../models/User.model";
+import type { AccessTokenPayload } from "../services/auth.service";
 import logger from "../utils/logger";
 
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET!;
@@ -37,7 +38,7 @@ export const authenticate = (
   );
   const header = req.headers.authorization;
 
-  if (!header || !header.startsWith("Bearer")) {
+  if (!header || !header.startsWith("Bearer ")) {
     return res
       .status(401)
       .json({ success: false, message: "Unauthorized token missing" });
@@ -45,8 +46,9 @@ export const authenticate = (
 
   const token = header.split(" ")[1];
   try {
-    const decoded = jwt.verify(token, ACCESS_SECRET) as { id: string };
+    const decoded = jwt.verify(token, ACCESS_SECRET) as AccessTokenPayload;
     req.userId = decoded.id;
+    req.userRole = decoded.role;
     logger.info(`Authenticated user ID successfully: ${req.userId}`);
     next();
   } catch (err: any) {
@@ -56,3 +58,24 @@ export const authenticate = (
       .json({ success: false, message: "Invalid or expired token" });
   }
 };
+
+export const requireRole = (...allowedRoles: UserRole[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.userRole) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Unauthorized role missing" });
+    }
+
+    if (!allowedRoles.includes(req.userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: insufficient permissions",
+      });
+    }
+
+    next();
+  };
+};
+
+export const requireAdmin = requireRole("admin");
