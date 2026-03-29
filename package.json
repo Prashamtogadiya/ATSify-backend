@@ -7,7 +7,11 @@
     "build": "tsc",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "start": "node dist/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "cross-env NODE_ENV=test vitest run",
+    "test:watch": "cross-env NODE_ENV=test vitest",
+    "test:unit": "cross-env NODE_ENV=test vitest run tests/unit",
+    "test:integration": "cross-env NODE_ENV=test vitest run tests/integration",
+    "test:coverage": "cross-env NODE_ENV=test vitest run --coverage"
   },
   "keywords": [],
   "author": "",
@@ -46,10 +50,15 @@
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.0.0",
     "@types/node": "^24.10.0",
+    "@types/supertest": "^7.2.0",
     "@types/tesseract.js": "^2.0.0",
     "@types/winston": "^2.4.4",
+    "cross-env": "^10.1.0",
+    "mongodb-memory-server": "^11.0.1",
     "nodemon": "^3.1.10",
+    "supertest": "^7.2.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.2"
   }
 }
