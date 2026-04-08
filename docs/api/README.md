@@ -1,88 +1,170 @@
-# ATSify Backend API Documentation
+# ATSify API Reference
 
-## Overview
-ATSify is an AI-assisted resume optimization platform. The backend owns authentication, file security, job request persistence, resume storage orchestration, analysis generation, and admin visibility.
+This document is the entry point for the backend API. It summarizes the platform contract, shows how the modules fit together, and links to the detailed module-level docs.
 
-Base URL:
-- Development: http://localhost:3000/api/v1
+## Base URL
 
-## Product Intent
-The API is designed around three user outcomes:
-- Upload and protect resumes without exposing raw storage credentials
-- Compare resumes against job descriptions with repeatable analysis history
-- Give admins operational visibility into platform usage and role management
+- Development: `http://localhost:3000/api/v1`
 
-## System Boundary
+## API Goals
 
-```text
-BOUNDARY MAP
+The API is designed to support four product flows:
 
-[Frontend]
-   sends authenticated HTTP requests to
-      -> [Express API]
+1. Create and maintain authenticated user sessions.
+2. Upload and privately access resumes.
+3. Save job requests that define analysis context.
+4. Generate, retrieve, and manage ATS analysis results.
 
-[Express API] internal control planes:
-  - AuthN/AuthZ (JWT + RBAC)
-  - Persistence adapter (MongoDB)
-  - Binary storage adapter (Google Drive)
-  - Analysis engine adapter (AI services)
+## Module Map
+
+| Module | Base Path | Purpose | Detailed Doc |
+|---|---|---|---|
+| Authentication | `/auth` | Session creation, renewal, logout | `./auth.md` |
+| Resume | `/resume` | Upload, metadata retrieval, file streaming | `./resume.md` |
+| Job Requests | `/job-requests` | Persist analysis context per user | `./job-request.md` |
+| Analysis | `/analysis` | Generate ATS analysis and browse history | `./analysis.md` |
+| Admin / RBAC | `/admin` | Admin metrics, user listing, role changes | `./admin-rbac.md` |
+
+## Complete Endpoint Inventory
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `POST` | `/auth/signup` | Public | Create a user and start a session |
+| `POST` | `/auth/login` | Public | Authenticate and start a session |
+| `GET` | `/auth/refresh` | Refresh cookie | Renew access token |
+| `POST` | `/auth/logout` | Public session context | Revoke refresh token and clear cookie |
+| `POST` | `/resume/upload` | Bearer token | Upload and process a resume PDF |
+| `GET` | `/resume` | Bearer token | List current user's resumes |
+| `GET` | `/resume/:id` | Bearer token | Get resume metadata and backend proxy URLs |
+| `GET` | `/resume/:id/pdf` | Bearer token | Stream the stored PDF |
+| `GET` | `/resume/:id/images/:index` | Bearer token | Stream a rendered resume page image |
+| `POST` | `/job-requests` | Bearer token | Create a job request |
+| `GET` | `/job-requests` | Bearer token | List current user's job requests |
+| `GET` | `/job-requests/:id` | Bearer token | Get one job request in user scope |
+| `POST` | `/analysis/analyze` | Bearer token | Generate and save a new analysis |
+| `GET` | `/analysis/history` | Bearer token | Get recent analysis history |
+| `GET` | `/analysis/job-request/:jobRequestId/latest` | Bearer token | Get latest analysis for a job request |
+| `GET` | `/analysis/:analysisId` | Bearer token | Get a specific historical analysis |
+| `GET` | `/admin/dashboard/stats` | Bearer token + admin role | Get platform dashboard metrics |
+| `GET` | `/admin/users` | Bearer token + admin role | List users with activity counts |
+| `PATCH` | `/admin/users/:userId/role` | Bearer token + admin role | Change a user's role |
+
+## End-to-End Platform Flow
+
+```mermaid
+flowchart LR
+    A["Auth"] --> B["Resume Upload"]
+    B --> C["Job Request"]
+    C --> D["Run Analysis"]
+    D --> E["Save Snapshot"]
+    E --> F["Read Latest or Historical Result"]
 ```
 
-Authenticated file streaming sits behind the API boundary. The browser never talks directly to Drive.
+## Cross-Cutting Conventions
 
-## Request and Response Conventions
-All protected endpoints expect:
+### Authentication
+
+Protected endpoints expect:
+
 - `Authorization: Bearer <access_token>`
-- `Content-Type: application/json` unless file upload is required
 
-Common response shape:
-```json
-{
-  "success": true,
-  "message": "...",
-  "data": {}
-}
-```
+Session renewal expects:
 
-Common error shape:
-```json
-{
-  "success": false,
-  "message": "..."
-}
-```
+- `refreshToken` cookie set by the backend
 
-## API Modules
-| Module | Purpose | Doc |
+### Content Types
+
+- `application/json` for most endpoints
+- `multipart/form-data` for resume upload
+
+### Current Upload Constraints
+
+- resume upload accepts PDF only
+- maximum upload size is 5 MB
+
+### Current Rate Limits
+
+- `POST /analysis/analyze` is limited to 3 requests per minute per IP
+
+### Current Response Styles
+
+The implementation currently exposes more than one response envelope style. The docs preserve the current behavior rather than pretending the API is fully standardized.
+
+| Pattern | Used By | Example |
 |---|---|---|
-| Authentication | Sign up, sign in, refresh, logout | ./auth.md |
-| Resume | Drive-backed upload, stream, metadata | ./resume.md |
-| Job Requests | Store job descriptions and link resumes | ./job-request.md |
-| Analysis | Run AI analysis and read history | ./analysis.md |
-| Admin / RBAC | Admin dashboard, user role control | ./admin-rbac.md |
+| `success`, `message`, `data` | Analysis, admin, many auth responses | `{ "success": true, "message": "...", "data": {} }` |
+| Direct object with resource key | Resume routes | `{ "message": "...", "resume": {} }` |
+| `ApiResponse` shape | Job request routes | `{ "statusCode": 200, "data": {}, "message": "..." }` |
 
-## Primary Execution Flow
+This is important for frontend integration, test expectations, and future API cleanup work.
 
-```text
-TIMELINE VIEW
-T0  Resume upload accepted
-T1  JWT + file policy checks pass
-T2  PDF/pages written to Drive
-T3  Drive file IDs committed to MongoDB
-T4  Job request created
-T5  Analysis generated
-T6  Analysis persisted
-T7  Client fetches latest or exact historical record
+## Error Behavior
+
+Most failures resolve to one of these classes:
+
+| Status | Meaning | Typical Sources |
+|---|---|---|
+| `400` | Validation or bad input | Zod validation, duplicate signup, malformed body |
+| `401` | Missing or invalid authentication | Missing bearer token, expired access token, missing refresh cookie |
+| `403` | Valid identity but not permitted | Invalid refresh token, admin-only route accessed by non-admin |
+| `404` | Record or file not found in user scope | Missing job request, missing analysis, missing resume asset |
+| `429` | Rate limited | Analysis endpoint |
+| `500` | Unhandled server or dependency failure | Drive, AI, OCR, or database issues |
+
+## Current Standard Error Sources
+
+| Source | Typical Shape |
+|---|---|
+| Validation middleware | `{ "success": false, "message": "..." }` |
+| Auth middleware | `{ "success": false, "message": "..." }` |
+| Global error handler | `{ "success": false, "message": "..." }` |
+| Not found middleware | `{ "error": "Not Found", "message": "...", "path": "..." }` |
+
+## Middleware Pipeline
+
+```mermaid
+flowchart LR
+    Request --> Compression
+    Compression --> CORS
+    CORS --> JSON["JSON Parser"]
+    JSON --> HTTPLog["HTTP Logger"]
+    HTTPLog --> Cookies["Cookie Parser"]
+    Cookies --> Route["Route Handlers"]
+    Route --> NotFound["404 Handler"]
+    NotFound --> ErrorHandler["Global Error Handler"]
 ```
 
-## Operational Guarantees
-- Resume assets are private by default
-- Ownership is enforced at the backend boundary
-- Drive credentials are never exposed to the browser
-- History retrieval is user-scoped; admin visibility is separate
+## Dependency View by API Area
 
-## Version Notes
-- Resume storage migrated from local uploads to Google Drive
-- Resume PDFs and page images are streamed through backend routes
-- Analysis history now supports both latest and specific-record access
-- Admin and RBAC guidance is documented separately for operational clarity
+```mermaid
+flowchart TD
+    AUTH["Auth API"] --> USER["User Model"]
+    RESUME["Resume API"] --> RESUME_MODEL["Resume Model"]
+    RESUME --> DRIVE["Google Drive"]
+    RESUME --> PDF["PDF Conversion"]
+    JOB["Job Request API"] --> JOB_MODEL["JobRequest Model"]
+    ANALYSIS["Analysis API"] --> ANALYSIS_MODEL["Analysis Model"]
+    ANALYSIS --> RESUME_MODEL
+    ANALYSIS --> JOB_MODEL
+    ANALYSIS --> DRIVE
+    ANALYSIS --> OCR["OCR and Text Extraction"]
+    ANALYSIS --> AI["Groq Model"]
+    ADMIN["Admin API"] --> USER
+    ADMIN --> RESUME_MODEL
+    ADMIN --> JOB_MODEL
+    ADMIN --> ANALYSIS_MODEL
+```
+
+## Recommended Reading Order
+
+- Start with `../architecture.md` for the system model.
+- Read `./auth.md` and `./resume.md` first for core user flows.
+- Use `./job-request.md` and `./analysis.md` for product behavior.
+- Use `./admin-rbac.md` for operational/admin concerns.
+- Use `../google-drive-integration.md` for storage specifics.
+- Use `../security.md` for the security boundary and access model.
+- Use `../operations.md` for runtime and deployment guidance.
+
+## Change Management Note
+
+If the team wants a more executive-ready platform contract, the next documentation milestone should be an OpenAPI spec or Postman collection generated from the same source of truth. This Markdown set is structured to make that migration straightforward.

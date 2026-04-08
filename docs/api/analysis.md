@@ -1,91 +1,230 @@
 # Analysis API
 
-Back to index: ./README.md
+Back to index: `./README.md`
 
-Base path: /api/v1/analysis
+Base path: `/api/v1/analysis`
 
 ## Purpose
-Compute structured ATS feedback, store every run, and support both history browsing and latest-result retrieval.
 
-## Analysis Lifecycle
+The analysis module compares a stored resume against a saved job request, generates structured ATS-style feedback through an AI model, and stores every run as a historical snapshot.
 
-```text
-FLOW CIRCUIT
-[Trigger] POST /analysis/analyze
-   -> [Context Load] resume + job request from MongoDB
-   -> [Asset Fetch] Drive download by fileId
-   -> [Extraction] OCR/PDF text extraction
-   -> [Intelligence] AI scoring pipeline
-   -> [Persistence] save Analysis record
-   -> [Response] structured analysis payload
+## What the Analysis Produces
+
+Each analysis record contains:
+
+- `overallScore`
+- `ATS`
+- `toneAndStyle`
+- `content`
+- `structure`
+- `skills`
+- `extractedText`
+- references to the source resume and job request
+
+Each scored category includes:
+
+- `score`
+- `tips[]`
+
+Each tip includes:
+
+- `type`: `good` or `improve`
+- `tip`
+- optional `explanation`
+
+## Analysis Generation Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant DB as MongoDB
+    participant Drive as Google Drive
+    participant OCR as OCR/PDF Tools
+    participant AI as Groq Model
+
+    Client->>API: POST /analysis/analyze
+    API->>DB: Load resume and job request
+    API->>Drive: Download resume assets if needed
+    API->>OCR: Extract resume text
+    API->>AI: Send prompt and source text
+    AI-->>API: JSON analysis result
+    API->>DB: Save analysis snapshot
+    API-->>Client: Structured analysis response
 ```
 
-## Analysis Lookup Model
+## Source Selection Order
 
-```text
-ENTRYPOINT DECISION MAP
+The service chooses the best available resume source in this order:
 
-Analysis History Page
-  GET /analysis/history
-      |
-      +-- user selects one card --> GET /analysis/:analysisId
+1. Drive-backed page images
+2. Legacy local page images
+3. Drive-backed original PDF
+4. Legacy local PDF path
 
-Job Request Detail Page
-  [analysisId in URL?]
-      | yes -> GET /analysis/:analysisId (exact historical run)
-      | no  -> GET /analysis/job-request/:jobRequestId/latest
-```
+This ordering favors OCR-compatible image inputs while maintaining backward compatibility with older resume records.
 
 ## Endpoints
-| Method | Path | Purpose |
-|---|---|---|
-| POST | /analyze | Generate a new analysis |
-| GET | /history | List analysis runs for the authenticated user |
-| GET | /job-request/:jobRequestId/latest | Return latest analysis for a job request |
-| GET | /:analysisId | Return one specific saved analysis |
 
-## POST /analyze
-Request:
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/analyze` | Generate and save a new analysis |
+| `GET` | `/history` | Return recent analysis history for the current user |
+| `GET` | `/job-request/:jobRequestId/latest` | Return the most recent analysis for a job request |
+| `GET` | `/:analysisId` | Return one exact historical analysis record |
+
+All analysis routes require authentication.
+
+## Contract Summary
+
+| Concern | Current behavior |
+|---|---|
+| Auth model | Bearer token required |
+| Rate limiting | `POST /analyze` limited to 3 per minute per IP |
+| Persistence model | Every analysis run is saved as a new record |
+| History ordering | Newest first |
+| Latest lookup | By `jobRequestId` and `createdAt desc` |
+| Exact lookup | By `analysisId` in user scope |
+
+## `POST /analyze`
+
+Middleware chain:
+
+1. `authenticate`
+2. `analyzeRateLimiter`
+3. `validate(analyzeResumeSchema)`
+
+Request body:
+
 ```json
 {
-  "resumeId": "...",
-  "jobRequestId": "..."
+  "resumeId": "507f191e810c19729de860ea",
+  "jobRequestId": "507f191e810c19729de860eb"
 }
 ```
 
-The response contains:
-- extractedText
-- overallScore
-- ATS
-- toneAndStyle
-- content
-- structure
-- skills
+Rate limit policy:
 
-## GET /history
-Returns analysis records ordered by newest first.
+- window: 1 minute
+- max: 3 requests per IP
 
-Population rules:
-- `jobRequestId` includes companyName and jobTitle
-- `resumeId` includes resumeName
+Success response:
 
-This endpoint powers the Analysis History page and lets the UI link to a specific previous run.
+```json
+{
+  "success": true,
+  "message": "AI Resume Analysis Complete",
+  "data": {
+    "_id": "65f...",
+    "userId": "65e...",
+    "resumeId": "507f191e810c19729de860ea",
+    "jobRequestId": "507f191e810c19729de860eb",
+    "extractedText": "....",
+    "overallScore": 82,
+    "ATS": { "score": 80, "tips": [] },
+    "toneAndStyle": { "score": 81, "tips": [] },
+    "content": { "score": 85, "tips": [] },
+    "structure": { "score": 79, "tips": [] },
+    "skills": { "score": 86, "tips": [] }
+  }
+}
+```
 
-## GET /job-request/:jobRequestId/latest
-Returns the most recent analysis for that job request and current user. Use this when the product wants “latest result” semantics.
+Common failures:
 
-## GET /:analysisId
-Returns the exact stored analysis record, subject to user ownership. Use this when the UI must show an old run exactly as it was saved.
+- `400` if request validation fails
+- `401` if the bearer token is missing or invalid
+- `429` if the rate limit is exceeded
+- `500` if retrieval, extraction, or AI processing fails
 
-## Data Rules
-- History is user-scoped
-- Old analyses remain valid even if newer analyses exist for the same job request
-- Drive-backed resumes and legacy local-path resumes are both supported during migration
+## `GET /history`
 
-## Extraction Order
-1. page images from Drive
-2. legacy page images on disk
-3. Drive PDF buffer
-4. legacy local PDF path
+Returns the current user's analysis records ordered by newest first.
 
-That order prioritizes OCR-friendly inputs and preserves backward compatibility.
+Query parameters:
+
+- `limit`: optional, clamped between `1` and `100`, default `20`
+
+Population behavior:
+
+- `jobRequestId` is populated with `companyName` and `jobTitle`
+- `resumeId` is populated with `resumeName`
+
+This endpoint powers an analysis history view and lets the frontend deep-link into exact previous runs.
+
+## `GET /job-request/:jobRequestId/latest`
+
+Returns the newest stored analysis for the current user and the specified job request.
+
+Use this endpoint when the product wants:
+
+- "show me the latest answer for this job request"
+
+Not found response:
+
+```json
+{
+  "success": false,
+  "message": "No analysis found for this job request"
+}
+```
+
+## `GET /:analysisId`
+
+Returns a specific historical analysis record in user scope.
+
+This is the correct endpoint when the product wants:
+
+- "show exactly the analysis that was generated earlier"
+
+Population behavior:
+
+- `jobRequestId` includes `companyName` and `jobTitle`
+- `resumeId` includes `resumeName`
+
+## Retrieval Decision Model
+
+```mermaid
+flowchart TD
+    A["Need Analysis Result"] --> B{"Specific analysis id available?"}
+    B -->|Yes| C["GET /analysis/:analysisId"]
+    B -->|No| D{"Need only the newest result?"}
+    D -->|Yes| E["GET /analysis/job-request/:jobRequestId/latest"]
+    D -->|No| F["GET /analysis/history"]
+```
+
+## Prompting and AI Contract
+
+The analysis service currently:
+
+- uses the Groq model `llama-3.3-70b-versatile`
+- sends resume text plus job description
+- requests a strict JSON-only response
+- sanitizes markdown fences before `JSON.parse`
+
+This means the AI integration depends on the model returning machine-readable JSON consistently.
+
+## Product and Audit Value
+
+Storing every analysis run creates a useful audit trail:
+
+- users can compare old versus new resume iterations
+- PMs can reason about repeat usage
+- engineering can debug extraction or scoring differences over time
+
+## Response and Failure Matrix
+
+| Endpoint | Success | Common failures |
+|---|---|---|
+| `POST /analyze` | `200` | `400`, `401`, `429`, `500` |
+| `GET /history` | `200` | `401`, `500` |
+| `GET /job-request/:jobRequestId/latest` | `200` | `401`, `404`, `500` |
+| `GET /:analysisId` | `200` | `401`, `404`, `500` |
+
+## QA Notes
+
+Current integration coverage verifies:
+
+- unauthenticated analyze calls are blocked
+- validation failures return `400`
+- valid requests return a structured analysis payload

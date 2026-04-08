@@ -1,67 +1,77 @@
 # Authentication API
 
-Back to index: ./README.md
+Back to index: `./README.md`
 
-Base path: /api/v1/auth
+Base path: `/api/v1/auth`
 
 ## Purpose
-Own the login session lifecycle for both browser users and admin users. The API uses short-lived access tokens plus long-lived refresh cookies so the frontend never needs to store raw credentials.
 
-## Authentication Model
-| Token | Location | Lifetime | Used For |
+The authentication module creates user accounts, issues session credentials, renews access tokens, and revokes refresh tokens. It is the entry point for both regular users and admins.
+
+## Session Model
+
+| Credential | Stored In | Lifetime | Used For |
 |---|---|---|---|
-| Access token | Authorization header | 15 minutes | API authorization |
-| Refresh token | httpOnly cookie | 7 days | Session renewal |
+| Access token | Frontend-managed bearer token | 15 minutes | Authenticated API calls |
+| Refresh token | `httpOnly` cookie and MongoDB user record | 7 days | Access token renewal |
 
-Access token payload includes:
-- user id
-- role
+The access token payload contains:
 
-## Lifecycle Diagram
+- `id`
+- `role`
 
-```text
-┌─────────┐         ┌─────────┐         ┌──────────┐
-│  Client │         │   API   │         │ Database │
-└────┬────┘         └────┬────┘         └────┬─────┘
-     │                   │                   │
-     │  1. POST /signup  │                   │
-     ├──────────────────>│                   │
-     │                   │  Save User        │
-     │                   ├──────────────────>│
-     │                   │                   │
-     │  2. POST /login   │                   │
-     ├──────────────────>│                   │
-     │                   │  Verify           │
-     │                   ├──────────────────>│
-     │  accessToken +    │                   │
-     │  refreshToken     │                   │
-     │<──────────────────┤                   │
-     │                   │                   │
-     │  3. Protected     │                   │
-     │     Request       │                   │
-     ├──────────────────>│  Verify JWT       │
-     │  (with Bearer)    │                   │
-     │                   │                   │
-     │  4. GET /refresh  │                   │
-     ├──────────────────>│  Verify Refresh   │
-     │  (when expired)   │  Token            │
-     │                   ├──────────────────>│
-     │  New accessToken  │                   │
-     │<──────────────────┤                   │
+## Auth Lifecycle
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant DB as MongoDB
+
+    Client->>API: POST /signup
+    API->>DB: Create user
+    API->>DB: Persist refresh token
+    API-->>Client: accessToken + refresh cookie
+
+    Client->>API: POST /login
+    API->>DB: Validate user
+    API->>DB: Replace refresh token
+    API-->>Client: accessToken + refresh cookie
+
+    Client->>API: GET /refresh
+    API->>DB: Find user by refresh token
+    API-->>Client: new accessToken
+
+    Client->>API: POST /logout
+    API->>DB: Clear stored refresh token
+    API-->>Client: cleared cookie + success response
 ```
 
 ## Endpoints
-| Method | Path | Description |
-|---|---|---|
-| POST | /signup | Register a new user |
-| POST | /login | Authenticate and issue tokens |
-| GET | /refresh | Renew access token using refresh cookie |
-| POST | /logout | Revoke refresh token |
 
-## POST /signup
-Creates a user account.
+| Method | Path | Auth Required | Description |
+|---|---|---|---|
+| `POST` | `/signup` | No | Create a new user and start a session |
+| `POST` | `/login` | No | Validate credentials and start a session |
+| `GET` | `/refresh` | Refresh cookie only | Renew access token |
+| `POST` | `/logout` | No | Revoke refresh token and clear cookie |
 
-Request:
+## Contract Summary
+
+| Concern | Current behavior |
+|---|---|
+| Access token TTL | 15 minutes |
+| Refresh token TTL | 7 days |
+| Refresh token storage | `httpOnly` cookie plus MongoDB user record |
+| Role propagation | Included in access token payload |
+| Refresh token revocation | Logout and admin role change |
+
+## `POST /signup`
+
+Creates a new user, generates access and refresh tokens, stores the refresh token on the user record, and sets the `refreshToken` cookie.
+
+Request body:
+
 ```json
 {
   "name": "Jane Doe",
@@ -70,23 +80,41 @@ Request:
 }
 ```
 
-Response:
+Validation rules:
+
+- `name`: minimum 2 characters
+- `email`: valid email, trimmed, lowercased
+- `password`: minimum 6 characters
+
+Success response:
+
 ```json
 {
   "success": true,
   "message": "User created",
   "user": {
-    "_id": "...",
+    "_id": "65f...",
     "name": "Jane Doe",
-    "email": "jane@example.com"
-  }
+    "email": "jane@example.com",
+    "role": "user",
+    "createdAt": "2026-04-08T00:00:00.000Z",
+    "updatedAt": "2026-04-08T00:00:00.000Z"
+  },
+  "accessToken": "<jwt>"
 }
 ```
 
-## POST /login
-Authenticates the user and returns an access token while setting the refresh cookie.
+Common failures:
 
-Request:
+- `400` if the user already exists
+- `400` if validation fails
+
+## `POST /login`
+
+Authenticates an existing user and issues a fresh access token plus refresh cookie.
+
+Request body:
+
 ```json
 {
   "email": "jane@example.com",
@@ -94,7 +122,8 @@ Request:
 }
 ```
 
-Response:
+Success response:
+
 ```json
 {
   "success": true,
@@ -102,18 +131,90 @@ Response:
 }
 ```
 
-## GET /refresh
-Uses the refresh cookie to mint a new access token. If the cookie is missing, expired, or revoked, the client must sign in again.
+Common failures:
 
-## POST /logout
-Revokes the stored refresh token and clears the session on the server side.
+- `400` if the user does not exist
+- `400` if the password is invalid
+
+## `GET /refresh`
+
+Reads the `refreshToken` cookie, verifies that it is both:
+
+- cryptographically valid
+- still present in the stored user record
+
+Success response:
+
+```json
+{
+  "success": true,
+  "accessToken": "<jwt>"
+}
+```
+
+Failure behavior:
+
+- `401` with `No refresh token` when the cookie is absent
+- `403` with invalid refresh messaging when the token is invalid, expired, or revoked
+
+## `POST /logout`
+
+Clears the refresh token from the database if present and clears the cookie in the response.
+
+Success response:
+
+```json
+{
+  "success": true,
+  "message": "Logout Successful"
+}
+```
+
+## Cookie Behavior
+
+The refresh cookie is configured with:
+
+- `httpOnly: true`
+- `sameSite: strict`
+- `path: /`
+- `secure: true` only in production mode
 
 ## Security Notes
-- Access tokens are sent only over HTTPS in production
-- Refresh tokens are never exposed to JavaScript
-- The backend uses role claims for RBAC decisions
 
-## Common Error States
-- 400: validation failure or malformed payload
-- 401: missing token, invalid token, or expired token
-- 403: invalid refresh token or insufficient permission
+- Refresh tokens are not exposed to browser JavaScript.
+- Role is embedded in the access token and is used by RBAC middleware.
+- A refresh token is replaced on login and cleared on logout.
+- Admin role changes also clear the stored refresh token so the user must re-authenticate.
+
+## Response and Failure Matrix
+
+| Endpoint | Success | Common failures |
+|---|---|---|
+| `POST /signup` | `201` | `400` validation failure, duplicate email |
+| `POST /login` | `200` | `400` user not found, invalid credentials |
+| `GET /refresh` | `200` | `401` no refresh token, `403` invalid refresh token |
+| `POST /logout` | `200` | `500` unexpected logout failure |
+
+## Example Protected Call Pattern
+
+```mermaid
+flowchart LR
+    A["User logs in"] --> B["Frontend stores access token"]
+    B --> C["Frontend calls protected endpoint with Bearer token"]
+    C --> D{"Access token valid?"}
+    D -->|Yes| E["Request succeeds"]
+    D -->|No| F["Frontend calls GET /auth/refresh"]
+    F --> G{"Refresh cookie valid?"}
+    G -->|Yes| H["New access token returned"]
+    H --> C
+    G -->|No| I["User must log in again"]
+```
+
+## QA Notes
+
+The integration tests currently verify:
+
+- successful signup issues access token and refresh cookie
+- duplicate signup is rejected
+- login returns a new access token and cookie
+- refresh without a cookie returns `401`
