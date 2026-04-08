@@ -10,7 +10,6 @@ import cors from "cors";
 import compression from "compression";
 import { notFoundHandler } from "./middleware/notFound.middleware";
 import { errorHandler } from "./middleware/errorHandler";
-import path from "path";
 
 const app = express();
 
@@ -41,9 +40,6 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Credentials", "true");
   next();
 });
-
-// Serve static files from the "uploads" directory
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // auth routes
 app.use("/api/v1/auth", authRouter);
