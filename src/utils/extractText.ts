@@ -4,15 +4,16 @@
 // - Logs extraction start and the length of extracted text
 // - Returns the extracted text as a string
 
-import fs from "fs";
 import pdf from "pdf-parse-fork";
 import logger from "../utils/logger";
+import fs from "fs";
 
-export const extractTextFromPdf = async (pdfPath: string) => {
-  logger.info(`Extracting text from PDF: ${pdfPath}`);
+export const extractTextFromPdf = async (pdfSource: string | Buffer) => {
+  logger.info("Extracting text from PDF source");
 
-  // Read PDF file into buffer
-  const dataBuffer = fs.readFileSync(pdfPath);
+  const dataBuffer = Buffer.isBuffer(pdfSource)
+    ? pdfSource
+    : fs.readFileSync(pdfSource);
 
   // Extract text
   const data = await (pdf as any)(dataBuffer);

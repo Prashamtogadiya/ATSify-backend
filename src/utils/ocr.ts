@@ -6,10 +6,12 @@ import Tesseract from "tesseract.js";
 //   imagePaths - array of file paths or URLs of images to process
 // Returns:
 //   string - concatenated text extracted from all images
-export const extractTextFromImages = async (imagePaths: string[]) => {
+export const extractTextFromImages = async (
+  imageSources: Array<string | Buffer>
+) => {
   let fullText = "";
 
-  for (const img of imagePaths) {
+  for (const img of imageSources) {
     const result = await Tesseract.recognize(img, "eng");
     fullText += result.data.text + "\n";
   }
