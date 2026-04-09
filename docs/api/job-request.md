@@ -14,13 +14,8 @@ Without a job request, the platform has no target role to compare against. This 
 
 ## Lifecycle
 
-```mermaid
-flowchart LR
-    A["Select Resume"] --> B["Enter Job Details"]
-    B --> C["POST /job-requests"]
-    C --> D["Validate Payload"]
-    D --> E["Persist Job Request"]
-    E --> F["Use Job Request in Analysis"]
+```text
+Select Resume -> Enter Job Details -> POST /job-requests -> Validate Payload -> Persist Job Request -> Use Job Request in Analysis
 ```
 
 ## Data Model
@@ -129,14 +124,23 @@ Success response:
 
 ## Pagination Flow
 
-```mermaid
-flowchart TD
-    A["Client requests page"] --> B["Filter by authenticated user"]
-    B --> C["Sort by newest first"]
-    C --> D["Fetch limit + 1 records"]
-    D --> E{"More than limit?"}
-    E -->|Yes| F["Return page and nextCursor"]
-    E -->|No| G["Return page with no nextCursor"]
+```text
+Client requests page
+  |
+  v
+Filter by authenticated user
+  |
+  v
+Sort by newest first
+  |
+  v
+Fetch limit + 1 records
+  |
+  v
+More than limit?
+    |Yes                    |No
+    v                       v
+Return page and nextCursor  Return page with no nextCursor
 ```
 
 ## `GET /:id`

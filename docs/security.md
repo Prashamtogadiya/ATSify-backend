@@ -14,14 +14,16 @@ The backend is designed to enforce these security goals:
 
 ## Security Boundary
 
-```mermaid
-flowchart LR
-    Browser["Browser Client"] --> API["Authenticated Backend API"]
-    API --> DB["MongoDB"]
-    API --> DRIVE["Google Drive"]
+```text
+Browser Client
+    |
+    v
+Authenticated Backend API
+    |                 \
+    v                  v
+  MongoDB          Google Drive
 
-    Browser -. no direct DB access .-> DB
-    Browser -. no direct Drive credentials .-> DRIVE
+Browser has no direct DB access and no direct Drive credentials.
 ```
 
 ## Authentication Controls
@@ -51,16 +53,25 @@ Admin-only routes require:
 
 The access token payload includes the user role, which is checked in middleware before controller execution.
 
-```mermaid
-flowchart TD
-    A["Protected request"] --> B["Verify bearer token"]
-    B -->|Invalid or missing| C["401 Unauthorized"]
-    B -->|Valid| D["Attach userId and role"]
-    D --> E{"Admin-only route?"}
-    E -->|No| F["Continue"]
-    E -->|Yes| G["Check admin role"]
-    G -->|Not admin| H["403 Forbidden"]
-    G -->|Admin| F
+```text
+Protected request
+  |
+  v
+Verify bearer token
+   |              \
+   | invalid      | valid
+   v              v
+401 Unauthorized  Attach userId and role
+          |
+          v
+       Admin-only route?
+      |Yes      |No
+      v         v
+    Check admin role  Continue
+      |
+      | not admin / admin |
+       v                  v
+  403 Forbidden          Continue
 ```
 
 ## Data Ownership Model

@@ -15,12 +15,30 @@ At runtime the backend is responsible for:
 
 ## Startup Sequence
 
-```mermaid
-flowchart TD
-    A["Load environment variables"] --> B["Connect to MongoDB"]
-    B --> C["Initialize Express app"]
-    C --> D["Expose API routes and middleware"]
-    D --> E["Listen on configured port"]
+```text
++-----------------------------+
+| Load environment variables  |
++-----------------------------+
+              |
+              v
++-----------------------------+
+| Connect to MongoDB          |
++-----------------------------+
+              |
+              v
++-----------------------------+
+| Initialize Express app      |
++-----------------------------+
+              |
+              v
++-----------------------------+
+| Expose API routes/middleware|
++-----------------------------+
+              |
+              v
++-----------------------------+
+| Listen on configured port   |
++-----------------------------+
 ```
 
 ## Required Environment Variables

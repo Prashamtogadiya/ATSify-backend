@@ -22,29 +22,29 @@ The access token payload contains:
 
 ## Auth Lifecycle
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API
-    participant DB as MongoDB
+```text
+Client        API              MongoDB
+  | POST /signup ->             |
+  |--------------------------->  |
+  |                    Create user
+  |                    Persist refresh token
+  | <--- accessToken + refresh cookie
 
-    Client->>API: POST /signup
-    API->>DB: Create user
-    API->>DB: Persist refresh token
-    API-->>Client: accessToken + refresh cookie
+  | POST /login  ->             |
+  |--------------------------->  |
+  |                    Validate user
+  |                    Replace refresh token
+  | <--- accessToken + refresh cookie
 
-    Client->>API: POST /login
-    API->>DB: Validate user
-    API->>DB: Replace refresh token
-    API-->>Client: accessToken + refresh cookie
+  | GET /refresh  ->             |
+  |--------------------------->  |
+  |                    Find user by refresh token
+  | <--- new accessToken        |
 
-    Client->>API: GET /refresh
-    API->>DB: Find user by refresh token
-    API-->>Client: new accessToken
-
-    Client->>API: POST /logout
-    API->>DB: Clear stored refresh token
-    API-->>Client: cleared cookie + success response
+  | POST /logout  ->             |
+  |--------------------------->  |
+  |                    Clear stored refresh token
+  | <--- cleared cookie + success response
 ```
 
 ## Endpoints
@@ -197,17 +197,29 @@ The refresh cookie is configured with:
 
 ## Example Protected Call Pattern
 
-```mermaid
-flowchart LR
-    A["User logs in"] --> B["Frontend stores access token"]
-    B --> C["Frontend calls protected endpoint with Bearer token"]
-    C --> D{"Access token valid?"}
-    D -->|Yes| E["Request succeeds"]
-    D -->|No| F["Frontend calls GET /auth/refresh"]
-    F --> G{"Refresh cookie valid?"}
-    G -->|Yes| H["New access token returned"]
-    H --> C
-    G -->|No| I["User must log in again"]
+```text
+User logs in
+  |
+  v
+Frontend stores access token
+  |
+  v
+Frontend calls protected endpoint with Bearer token
+  |
+  v
+Access token valid?
+  |Yes                     |No
+  v                        v
+Request succeeds      Frontend calls GET /auth/refresh
+                    |
+                    v
+                Refresh cookie valid?
+                |Yes                |No
+                v                   v
+          New access token returned   User must log in again
+                |
+                v
+         Frontend retries protected call
 ```
 
 ## QA Notes

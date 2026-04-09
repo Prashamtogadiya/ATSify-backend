@@ -17,13 +17,18 @@ All admin routes run behind:
 
 Only users with `role = "admin"` can proceed.
 
-```mermaid
-flowchart TD
-    A["Incoming Admin Request"] --> B["Authenticate"]
-    B -->|Invalid or missing token| C["401 Unauthorized"]
-    B -->|Valid token| D["Check Admin Role"]
-    D -->|role != admin| E["403 Forbidden"]
-    D -->|role = admin| F["Admin Controller"]
+```text
+Incoming Admin Request
+    |
+    v
+   Authenticate
+  |                    \
+  | invalid/missing     | valid
+  v                     v
+401 Unauthorized     Check Admin Role
+             | admin?   | not admin
+             v          v
+          Admin Controller 403 Forbidden
 ```
 
 ## Admin Capabilities
@@ -83,20 +88,17 @@ Example response:
 
 ## Metrics Aggregation View
 
-```mermaid
-flowchart LR
-    A["Dashboard Request"] --> B["User Counts"]
-    A --> C["Analysis Counts"]
-    A --> D["Job Request Count"]
-    A --> E["Resume Count"]
-    A --> F["Recent Activity Metrics"]
-    A --> G["Score Aggregates"]
-    B --> H["Combined Dashboard Response"]
-    C --> H
-    D --> H
-    E --> H
-    F --> H
-    G --> H
+```text
+Dashboard Request
+  |   |   |   |   |
+  v   v   v   v   v
+User  Analysis  Job Request  Resume  Recent Activity  Score
+Counts Counts    Count        Count   Metrics         Aggregates
+  \    \         \            \        \              /
+   \    \         \            \        \            /
+    +------------------------------------------------+
+    | Combined Dashboard Response                     |
+    +------------------------------------------------+
 ```
 
 ## `GET /users`
@@ -158,19 +160,14 @@ Why the refresh token is cleared:
 
 ## Role Change Flow
 
-```mermaid
-sequenceDiagram
-    participant Admin
-    participant API
-    participant DB as MongoDB
-    participant User as Target User
-
-    Admin->>API: PATCH /admin/users/:userId/role
-    API->>DB: Load target user
-    API->>DB: Update role
-    API->>DB: Clear refreshToken
-    API-->>Admin: Updated user response
-    Note over User: Next refresh/login required for new role to take effect in session
+```text
+Admin -> API -> MongoDB -> Target User
+  |       |        |           |
+  |       |        | Update role
+  |       |        | Clear refreshToken
+  |       |<-------| Updated user response
+  |
+  Next refresh/login is required for the new role to take effect in the session.
 ```
 
 ## Security Notes

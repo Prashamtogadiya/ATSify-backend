@@ -16,35 +16,37 @@ The resume module accepts PDF uploads, converts them into storage-ready assets, 
 
 ## Resume Processing Flow
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API
-    participant Temp as Temp Storage
-    participant Drive as Google Drive
-    participant DB as MongoDB
-
-    Client->>API: POST /resume/upload (multipart PDF)
-    API->>API: Authenticate request
-    API->>Temp: Write temp PDF
-    API->>Drive: Ensure user folder exists
-    API->>Drive: Upload original PDF
-    API->>Temp: Convert PDF pages to images
-    API->>Drive: Upload page images
-    API->>DB: Save resume metadata + Drive IDs
-    API-->>Client: Resume metadata response
+```text
+Client        API            Temp Storage      Google Drive      MongoDB
+  | POST /resume/upload ->       |                 |               |
+  |-----------------------------> |                 |               |
+  |                    Authenticate request        |               |
+  |-----------------------------> |                 |               |
+  |                          Write temp PDF        |               |
+  |-----------------------------------------------> |               |
+  |                                            Ensure user folder   |
+  |---------------------------------------------------------------> |
+  |                                            Upload original PDF   |
+  |---------------------------------------------------------------> |
+  |                          Convert PDF pages to images            |
+  |-----------------------------------------------> |               |
+  |                                            Upload page images   |
+  |---------------------------------------------------------------> |
+  |                          Save resume metadata + Drive IDs       |
+  |---------------------------------------------------------------->| 
+  | <------------------------- Resume metadata response ------------|
 ```
 
 ## Storage Model
 
-```mermaid
-flowchart TD
-    U["Authenticated User"] --> R["Resume Record"]
+```text
+Authenticated User -> Resume Record
 
-    R --> N["resumeName"]
-    R --> F["driveFolderId"]
-    R --> P["originalPdfDriveFileId"]
-    R --> I["imageDriveFileIds[]"]
+Resume Record contains:
+  - resumeName
+  - driveFolderId
+  - originalPdfDriveFileId
+  - imageDriveFileIds[]
 ```
 
 ## Endpoints
@@ -197,12 +199,8 @@ Rules:
 
 ## Controlled File Access Pattern
 
-```mermaid
-flowchart LR
-    A["Frontend Requests File"] --> B["Authenticate Request"]
-    B --> C["Check Resume Ownership"]
-    C --> D["Resolve Stored Drive File Id"]
-    D --> E["Stream File Through Backend"]
+```text
+Frontend Requests File -> Authenticate Request -> Check Resume Ownership -> Resolve Stored Drive File Id -> Stream File Through Backend
 ```
 
 ## Ownership Model

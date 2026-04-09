@@ -34,23 +34,16 @@ Each tip includes:
 
 ## Analysis Generation Flow
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API
-    participant DB as MongoDB
-    participant Drive as Google Drive
-    participant OCR as OCR/PDF Tools
-    participant AI as Groq Model
+```text
+Client -> API -> MongoDB -> Google Drive -> OCR/PDF Tools -> Groq Model -> MongoDB -> Client
 
-    Client->>API: POST /analysis/analyze
-    API->>DB: Load resume and job request
-    API->>Drive: Download resume assets if needed
-    API->>OCR: Extract resume text
-    API->>AI: Send prompt and source text
-    AI-->>API: JSON analysis result
-    API->>DB: Save analysis snapshot
-    API-->>Client: Structured analysis response
+1. Client submits POST /analysis/analyze.
+2. API loads resume and job request.
+3. API downloads resume assets if needed.
+4. OCR/PDF tools extract resume text.
+5. Groq Model returns JSON analysis data.
+6. API saves the analysis snapshot.
+7. API returns the structured analysis response.
 ```
 
 ## Source Selection Order
@@ -184,13 +177,17 @@ Population behavior:
 
 ## Retrieval Decision Model
 
-```mermaid
-flowchart TD
-    A["Need Analysis Result"] --> B{"Specific analysis id available?"}
-    B -->|Yes| C["GET /analysis/:analysisId"]
-    B -->|No| D{"Need only the newest result?"}
-    D -->|Yes| E["GET /analysis/job-request/:jobRequestId/latest"]
-    D -->|No| F["GET /analysis/history"]
+```text
+Need Analysis Result
+    |
+    v
+Specific analysis id available?
+    |Yes                     |No
+    v                        v
+GET /analysis/:analysisId   Need only the newest result?
+                |Yes                           |No
+                v                              v
+        GET /analysis/job-request/:jobRequestId/latest   GET /analysis/history
 ```
 
 ## Prompting and AI Contract

@@ -14,27 +14,36 @@ The backend exists to solve five platform problems:
 
 ## Architecture at a Glance
 
-```mermaid
-flowchart LR
-    FE["Frontend Client"] --> API["Express API"]
-
-    subgraph Backend["ATSify Backend"]
-        MW["Middleware"]
-        ROUTES["Routes"]
-        CTRL["Controllers"]
-        SVC["Services"]
-        MODELS["Mongoose Models"]
-    end
-
-    API --> MW
-    API --> ROUTES
-    ROUTES --> CTRL
-    CTRL --> SVC
-    SVC --> MODELS
-    MODELS --> MDB["MongoDB"]
-    SVC --> DRIVE["Google Drive"]
-    SVC --> AI["Groq Model"]
-    SVC --> OCR["PDF / OCR Utilities"]
+```text
++------------------+       +------------------+
+| Frontend Client  | ----> |   Express API    |
++------------------+       +------------------+
+                                   |
+                                   v
+   +------------------------------------------------------------------+
+   |                        ATSify Backend                            |
+   |  +-----------+   +---------+   +-----------+   +-----------+    |
+   |  |Middleware |-->| Routes  |-->|Controllers|-->| Services  |    |
+   |  +-----------+   +---------+   +-----------+   +-----------+    |
+   |                                                      |           |
+   |                                                      v           |
+   |                                               +--------------+   |
+   |                                               | Mongoose     |   |
+   |                                               | Models       |   |
+   |                                               +--------------+   |
+   +------------------------------------------------------------------+
+        |                     |                     |
+        v                     v                     v
+   +----------+          +----------+         +------------+
+   | MongoDB  |          | Google   |         | Groq Model |
+   +----------+          | Drive    |         +------------+
+                          +----------+
+                                |
+                                v
+                          +------------+
+                          | PDF / OCR  |
+                          | Utilities  |
+                          +------------+
 ```
 
 ## Responsibility Breakdown
@@ -51,45 +60,35 @@ flowchart LR
 
 ## Primary Domain Entities
 
-```mermaid
-flowchart TD
-    USER["User"]
-    RESUME["Resume"]
-    JOB["Job Request"]
-    ANALYSIS["Analysis"]
+```text
+   +--------+        owns        +--------+
+   | User   | -----------------> | Resume |
+   +--------+                    +--------+
+      |  \                           ^
+creates|   \ receives                | selected by
+      v    v                         |
+ +-----------+            drives   +-----------+
+ | Job       | ------------------> | Analysis  |
+ | Request   |                     +-----------+
+ +-----------+                           ^
+      |                                   |
+      +-----------------------------------+
+                     is evaluated in
 
-    USER -->|"owns"| RESUME
-    USER -->|"creates"| JOB
-    USER -->|"receives"| ANALYSIS
-    RESUME -->|"selected by"| JOB
-    JOB -->|"drives"| ANALYSIS
-    RESUME -->|"is evaluated in"| ANALYSIS
-
-    USER_META["Fields: id, email, role"] -.-> USER
-    RESUME_META["Fields: id, userId, resumeName, originalPdfDriveFileId"] -.-> RESUME
-    JOB_META["Fields: id, userId, resumeId, companyName, jobTitle"] -.-> JOB
-    ANALYSIS_META["Fields: id, userId, resumeId, jobRequestId, overallScore"] -.-> ANALYSIS
+User fields: id, email, role
+Resume fields: id, userId, resumeName, originalPdfDriveFileId
+Job Request fields: id, userId, resumeId, companyName, jobTitle
+Analysis fields: id, userId, resumeId, jobRequestId, overallScore
 ```
 
 ## Request Lifecycle
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Middleware
-    participant Controller
-    participant Service
-    participant DB as MongoDB
-    participant External
+```text
+Client -> Middleware -> Controller -> Service -> MongoDB / External tools
+   ^                                                                 |
+   |---------------------- JSON or stream response -------------------|
 
-    Client->>Middleware: HTTP request
-    Middleware->>Middleware: Auth / validation / rate limit
-    Middleware->>Controller: Validated request
-    Controller->>Service: Business operation
-    Service->>DB: Read / write metadata
-    Service->>External: Drive / AI / OCR as needed
-    Service-->>Controller: Result
-    Controller-->>Client: JSON or stream response
+Middleware handles auth, validation, and rate limiting before the request reaches business logic.
 ```
 
 ## Authentication and Authorization
@@ -104,16 +103,39 @@ Role-based authorization is currently simple and explicit:
 - `user` can access user-scoped business routes
 - `admin` can access admin routes through `requireAdmin`
 
-```mermaid
-flowchart TD
-    A["Incoming protected request"] --> B["authenticate middleware"]
-    B -->|Missing or invalid token| C["401 Unauthorized"]
-    B -->|Valid token| D["req.userId + req.userRole set"]
-    D --> E{"Admin route?"}
-    E -->|No| F["Controller execution"]
-    E -->|Yes| G["requireAdmin"]
-    G -->|role != admin| H["403 Forbidden"]
-    G -->|role = admin| F
+```text
++---------------------------+
+| Incoming protected request |
++---------------------------+
+          |
+          v
++---------------------------+
+| authenticate middleware   |
++---------------------------+
+    |                     |
+    | missing/invalid     | valid
+    v                     v
++-------------+   +----------------------+
+| 401         |   | req.userId and       |
+| Unauthorized|   | req.userRole set     |
++-------------+   +----------------------+
+                  |
+                  v
+             +----------------+
+             | Admin route?   |
+             +----------------+
+               |Yes      |No
+               v         v
+          +---------------+ +---------------------+
+          | requireAdmin  | | Controller execution|
+          +---------------+ +---------------------+
+             |        |
+             | no     | yes
+             v        v
+         +-------------+ +---------------------+
+         | 403         | | Controller execution|
+         | Forbidden   | +---------------------+
+         +-------------+
 ```
 
 ## Resume Storage Architecture
@@ -124,36 +146,71 @@ Resume storage is intentionally split:
 - Google Drive stores the original PDF and generated page images.
 - Backend streaming endpoints hide Drive internals from the client.
 
-```mermaid
-flowchart TD
-    U["User uploads PDF"] --> INTAKE["In-memory intake"]
-    INTAKE --> TEMP["Temporary working file"]
-
-    TEMP --> CONVERT["Convert PDF to page images"]
-    INTAKE --> PDFUP["Upload original PDF to Drive"]
-    CONVERT --> IMGUP["Upload page images to Drive"]
-
-    PDFUP --> META["Create resume metadata record"]
-    IMGUP --> META
-    META --> RESP["Return proxy URLs to client"]
+```text
+User uploads PDF
+     |
+     v
+ +-------------------+
+ | In-memory intake  |
+ +-------------------+
+     |
+     v
+ +-------------------+        +---------------------------+
+ | Temporary file    | ----->  | Convert PDF to page images|
+ +-------------------+        +---------------------------+
+     |                               |
+     v                               v
+ +----------------------+       +------------------------+
+ | Upload PDF to Drive  |       | Upload page images     |
+ +----------------------+       +------------------------+
+     \                               /
+      \                             /
+       v                           v
+     +-------------------------------+
+     | Create resume metadata record  |
+     +-------------------------------+
+             |
+             v
+     +-------------------------------+
+     | Return proxy URLs to client    |
+     +-------------------------------+
 ```
 
 ## Analysis Architecture
 
 Analysis is a multi-stage orchestration pipeline:
 
-```mermaid
-flowchart LR
-    A["Analyze request"] --> B["Load resume and job request"]
-    B --> C{"Available source"}
-    C -->|Drive images or local images| D["Extract text with OCR"]
-    C -->|Drive PDF or local PDF| E["Extract text from PDF"]
-    D --> F["Build analysis prompt"]
-    E --> F
-    F --> G["Call Groq model"]
-    G --> H["Parse structured JSON result"]
-    H --> I["Persist analysis snapshot"]
-    I --> J["Return analysis response"]
+```text
+Analyze request
+      |
+      v
+Load resume and job request
+      |
+      v
+   Available source?
+    /            \
+   v              v
+Drive or local    Drive or local
+images            PDF
+   |                |
+   v                v
+Extract text      Extract text
+with OCR          from PDF
+    \              /
+     v            v
+     Build analysis prompt
+              |
+              v
+          Call Groq model
+              |
+              v
+    Parse structured JSON result
+              |
+              v
+      Persist analysis snapshot
+              |
+              v
+      Return analysis response
 ```
 
 ## API Boundary Decisions
@@ -177,14 +234,16 @@ flowchart LR
 
 ## Security Boundary
 
-```mermaid
-flowchart TD
-    Browser["Browser"] --> API["Authenticated Backend API"]
-    API --> DB["MongoDB"]
-    API --> Drive["Google Drive"]
+```text
+Browser
+    |
+    v
+Authenticated Backend API
+    |                \
+    v                 v
+MongoDB         Google Drive
 
-    Browser -. no direct access .-> Drive
-    Browser -. no secret access .-> DB
+Browser has no direct access to MongoDB or Google Drive credentials.
 ```
 
 ## Known Architectural Constraints

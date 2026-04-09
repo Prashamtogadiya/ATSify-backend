@@ -21,12 +21,18 @@ The test suite follows a practical layered approach:
 
 ## Test Architecture
 
-```mermaid
-flowchart TD
-    A["Unit Tests"] --> B["Fast middleware and logic checks"]
-    C["Integration Tests"] --> D["Express app plus middleware plus DB behavior"]
-    D --> E["mongodb-memory-server"]
-    C --> F["Mock Drive and AI boundaries when needed"]
+```text
++---------------------------+      +--------------------------------------+
+| Unit Tests                | ---> | Fast middleware and logic checks     |
++---------------------------+      +--------------------------------------+
+       |
+       v
++---------------------------+      +--------------------------------------+
+| Integration Tests         | ---> | Express app + middleware + DB       |
++---------------------------+      +--------------------------------------+
+       |                               |
+       v                               v
+   Mock Drive and AI boundaries      mongodb-memory-server
 ```
 
 ## Commands
@@ -70,13 +76,19 @@ External or environment-sensitive boundaries should usually be mocked:
 
 ## Boundary Mocking Policy
 
-```mermaid
-flowchart LR
-    A["Choose test target"] --> B{"External dependency involved?"}
-    B -->|No| C["Keep dependency real"]
-    B -->|Yes| D{"Does this test need the real boundary?"}
-    D -->|No| E["Mock the boundary"]
-    D -->|Yes| F["Use a controlled integration seam"]
+```text
+Choose test target
+  |
+  v
+External dependency involved?
+   |                    \
+   | no                  | yes
+   v                     v
+Keep dependency real   Does this test need the real boundary?
+          |                     \
+          | no                  | yes
+          v                     v
+        Mock the boundary   Use a controlled integration seam
 ```
 
 ## Current Coverage Highlights

@@ -51,13 +51,8 @@ The API is designed to support four product flows:
 
 ## End-to-End Platform Flow
 
-```mermaid
-flowchart LR
-    A["Auth"] --> B["Resume Upload"]
-    B --> C["Job Request"]
-    C --> D["Run Analysis"]
-    D --> E["Save Snapshot"]
-    E --> F["Read Latest or Historical Result"]
+```text
+Auth -> Resume Upload -> Job Request -> Run Analysis -> Save Snapshot -> Read Latest or Historical Result
 ```
 
 ## Cross-Cutting Conventions
@@ -122,37 +117,18 @@ Most failures resolve to one of these classes:
 
 ## Middleware Pipeline
 
-```mermaid
-flowchart LR
-    Request --> Compression
-    Compression --> CORS
-    CORS --> JSON["JSON Parser"]
-    JSON --> HTTPLog["HTTP Logger"]
-    HTTPLog --> Cookies["Cookie Parser"]
-    Cookies --> Route["Route Handlers"]
-    Route --> NotFound["404 Handler"]
-    NotFound --> ErrorHandler["Global Error Handler"]
+```text
+Request -> Compression -> CORS -> JSON Parser -> HTTP Logger -> Cookie Parser -> Route Handlers -> 404 Handler -> Global Error Handler
 ```
 
 ## Dependency View by API Area
 
-```mermaid
-flowchart TD
-    AUTH["Auth API"] --> USER["User Model"]
-    RESUME["Resume API"] --> RESUME_MODEL["Resume Model"]
-    RESUME --> DRIVE["Google Drive"]
-    RESUME --> PDF["PDF Conversion"]
-    JOB["Job Request API"] --> JOB_MODEL["JobRequest Model"]
-    ANALYSIS["Analysis API"] --> ANALYSIS_MODEL["Analysis Model"]
-    ANALYSIS --> RESUME_MODEL
-    ANALYSIS --> JOB_MODEL
-    ANALYSIS --> DRIVE
-    ANALYSIS --> OCR["OCR and Text Extraction"]
-    ANALYSIS --> AI["Groq Model"]
-    ADMIN["Admin API"] --> USER
-    ADMIN --> RESUME_MODEL
-    ADMIN --> JOB_MODEL
-    ADMIN --> ANALYSIS_MODEL
+```text
+Auth API     -> User Model
+Resume API   -> Resume Model -> Google Drive -> PDF Conversion
+Job Request  -> JobRequest Model
+Analysis API -> Analysis Model -> Resume Model / JobRequest Model / Google Drive / OCR and Text Extraction / Groq Model
+Admin API    -> User Model / Resume Model / JobRequest Model / Analysis Model
 ```
 
 ## Recommended Reading Order
